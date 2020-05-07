@@ -3,9 +3,9 @@
 /**
  * @file controllers/wizard/fileUpload/form/PKPSubmissionFilesUploadBaseForm.inc.php
  *
- * Copyright (c) 2014-2018 Simon Fraser University
- * Copyright (c) 2003-2018 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class PKPSubmissionFilesUploadBaseForm
  * @ingroup controllers_wizard_fileUpload_form
@@ -137,7 +137,7 @@ class PKPSubmissionFilesUploadBaseForm extends Form {
 				// If we have a review stage id then we also expect a review round.
 				if (!$this->getData('fileStage') == SUBMISSION_FILE_QUERY && !is_a($this->getReviewRound(), 'ReviewRound')) assert(false);
 				// Can only upload submission files, review files, review attachments, dependent files, or query attachments.
-				if (!in_array($this->getData('fileStage'), array(SUBMISSION_FILE_SUBMISSION, SUBMISSION_FILE_REVIEW_FILE, SUBMISSION_FILE_REVIEW_ATTACHMENT, SUBMISSION_FILE_REVIEW_REVISION, SUBMISSION_FILE_QUERY, SUBMISSION_FILE_DEPENDENT))) fatalError('Invalid file stage!');
+				if (!in_array($this->getData('fileStage'), array(SUBMISSION_FILE_SUBMISSION, SUBMISSION_FILE_REVIEW_FILE, SUBMISSION_FILE_REVIEW_ATTACHMENT, SUBMISSION_FILE_REVIEW_REVISION, SUBMISSION_FILE_QUERY, SUBMISSION_FILE_DEPENDENT, SUBMISSION_FILE_ATTACHMENT))) fatalError('Invalid file stage!');
 
 				// Hide the revision selector for review
 				// attachments to make it easier for reviewers
@@ -175,7 +175,7 @@ class PKPSubmissionFilesUploadBaseForm extends Form {
 	 * @return array a list of SubmissionFile instances.
 	 */
 	function getRevisionSubmissionFilesSelection($user, $uploadedFile = null) {
-		$stageAssignmentDao = DAORegistry::getDAO('StageAssignmentDAO');
+		$stageAssignmentDao = DAORegistry::getDAO('StageAssignmentDAO'); /* @var $stageAssignmentDao StageAssignmentDAO */
 		$allSubmissionFiles = $this->getSubmissionFiles();
 		$submissionFiles = array();
 		foreach ($allSubmissionFiles as $submissionFile) {
@@ -208,7 +208,7 @@ class PKPSubmissionFilesUploadBaseForm extends Form {
 	/**
 	 * @copydoc Form::fetch()
 	 */
-	function fetch($request) {
+	function fetch($request, $template = null, $display = false) {
 		// Set the workflow stage.
 		$this->setData('stageId', $this->getStageId());
 
@@ -282,7 +282,7 @@ class PKPSubmissionFilesUploadBaseForm extends Form {
 
 		// Show ensuring a blind review link.
 		$context = $request->getContext();
-		if ($context->getSetting('showEnsuringLink') && in_array($this->getStageId(), array(WORKFLOW_STAGE_ID_SUBMISSION, WORKFLOW_STAGE_ID_INTERNAL_REVIEW, WORKFLOW_STAGE_ID_EXTERNAL_REVIEW))) {
+		if ($context->getData('showEnsuringLink') && in_array($this->getStageId(), array(WORKFLOW_STAGE_ID_SUBMISSION, WORKFLOW_STAGE_ID_INTERNAL_REVIEW, WORKFLOW_STAGE_ID_EXTERNAL_REVIEW))) {
 			import('lib.pkp.classes.linkAction.request.ConfirmationModal');
 			$ensuringLink = new LinkAction(
 				'addUser',
@@ -295,8 +295,8 @@ class PKPSubmissionFilesUploadBaseForm extends Form {
 			$templateMgr->assign('ensuringLink', $ensuringLink);
 		}
 
-		return parent::fetch($request);
+		return parent::fetch($request, $template, $display);
 	}
 }
 
-?>
+

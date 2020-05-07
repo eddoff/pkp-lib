@@ -3,9 +3,9 @@
 /**
  * @file controllers/grid/users/reviewer/ReviewerGridRow.inc.php
  *
- * Copyright (c) 2014-2018 Simon Fraser University
- * Copyright (c) 2000-2018 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class ReviewerGridRow
  * @ingroup controllers_grid_users_reviewer
@@ -67,9 +67,9 @@ class ReviewerGridRow extends GridRow {
 			);
 
 			// read or upload a review
-			$submissionDao = Application::getSubmissionDAO();
+			$submissionDao = DAORegistry::getDAO('SubmissionDAO'); /* @var $submissionDao SubmissionDAO */
 			$submission = $submissionDao->getById($submissionId);
-			$this->addAction(
+			if (!$reviewAssignment->getCancelled()) $this->addAction(
 				new LinkAction(
 					'readReview',
 					new AjaxModal(
@@ -95,7 +95,7 @@ class ReviewerGridRow extends GridRow {
 				)
 			);
 
-			if (!$this->_isCurrentUserAssignedAuthor) {
+			if (!$this->_isCurrentUserAssignedAuthor && !$reviewAssignment->getCancelled()) {
 				$this->addAction(
 					new LinkAction(
 						'manageAccess',
@@ -110,20 +110,30 @@ class ReviewerGridRow extends GridRow {
 				);
 
 				// Only assign this action if the reviewer has not acknowledged yet.
-				if (!$reviewAssignment->getDateConfirmed()) {
-					$this->addAction(
-						new LinkAction(
-							'unassignReviewer',
-							new AjaxModal(
-								$router->url($request, null, null, 'unassignReviewer', null, $actionArgs),
-								__('editor.review.unassignReviewer'),
-								'modal_delete'
-							),
-						__('editor.review.unassignReviewer'),
-						'delete'
-						)
-					);
-				}
+				if (!$reviewAssignment->getCancelled()) $this->addAction(
+					new LinkAction(
+						'unassignReviewer',
+						new AjaxModal(
+							$router->url($request, null, null, 'unassignReviewer', null, $actionArgs),
+							$reviewAssignment->getDateConfirmed()?__('editor.review.cancelReviewer'):__('editor.review.unassignReviewer'),
+							'modal_delete'
+						),
+					$reviewAssignment->getDateConfirmed()?__('editor.review.cancelReviewer'):__('editor.review.unassignReviewer'),
+					'delete'
+					)
+				);
+				else $this->addAction(
+					new LinkAction(
+						'reinstateReviewer',
+						new AjaxModal(
+							$router->url($request, null, null, 'reinstateReviewer', null, $actionArgs),
+							__('editor.review.reinstateReviewer'),
+							'modal_add'
+						),
+					__('editor.review.reinstateReviewer'),
+					'add'
+					)
+				);
 			}
 
 			$this->addAction(
@@ -143,7 +153,8 @@ class ReviewerGridRow extends GridRow {
 			if (
 				!Validation::isLoggedInAs() &&
 				$user->getId() != $reviewAssignment->getReviewerId() &&
-				Validation::canAdminister($reviewAssignment->getReviewerId(), $user->getId())
+				Validation::canAdminister($reviewAssignment->getReviewerId(), $user->getId()) &&
+				!$reviewAssignment->getCancelled()
 			) {
 				$dispatcher = $router->getDispatcher();
 				import('lib.pkp.classes.linkAction.request.RedirectConfirmationModal');
@@ -162,10 +173,8 @@ class ReviewerGridRow extends GridRow {
 			}
 
 			// Add gossip action when appropriate
-			import('classes.core.ServicesContainer');
-			$canCurrentUserGossip = ServicesContainer::instance()
-				->get('user')
-				->canCurrentUserGossip($reviewAssignment->getReviewerId());
+			import('classes.core.Services');
+			$canCurrentUserGossip = Services::get('user')->canCurrentUserGossip($reviewAssignment->getReviewerId());
 			if ($canCurrentUserGossip) {
 				$this->addAction(
 					new LinkAction(
@@ -183,5 +192,3 @@ class ReviewerGridRow extends GridRow {
 		}
 	}
 }
-
-?>

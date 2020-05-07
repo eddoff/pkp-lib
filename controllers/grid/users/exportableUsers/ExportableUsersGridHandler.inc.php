@@ -3,9 +3,9 @@
 /**
  * @file controllers/grid/users/exportableUsers/ExportableUsersGridHandler.inc.php
  *
- * Copyright (c) 2014-2018 Simon Fraser University
- * Copyright (c) 2000-2018 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class ExportableUsersGridHandler
  * @ingroup controllers_grid_users_exportableUsers
@@ -49,7 +49,7 @@ class ExportableUsersGridHandler extends GridHandler {
 	 * @copydoc GridHandler::initialize()
 	 */
 	function initialize($request, $args = null) {
-		parent::initialize($request);
+		parent::initialize($request, $args);
 
 		// Load user-related translations.
 		AppLocale::requireComponents(
@@ -176,7 +176,7 @@ class ExportableUsersGridHandler extends GridHandler {
 		$context = $request->getContext();
 
 		// Get all users for this context that match search criteria.
-		$userGroupDao = DAORegistry::getDAO('UserGroupDAO');
+		$userGroupDao = DAORegistry::getDAO('UserGroupDAO'); /* @var $userGroupDao UserGroupDAO */
 		$rangeInfo = $this->getGridRangeInfo($request, $this->getId());
 
 		return $users = $userGroupDao->getUsersById(
@@ -192,17 +192,17 @@ class ExportableUsersGridHandler extends GridHandler {
 	/**
 	 * @copydoc GridHandler::renderFilter()
 	 */
-	function renderFilter($request) {
+	function renderFilter($request, $filterData = array()) {
 		$context = $request->getContext();
-		$userGroupDao = DAORegistry::getDAO('UserGroupDAO');
+		$userGroupDao = DAORegistry::getDAO('UserGroupDAO'); /* @var $userGroupDao UserGroupDAO */
 		$userGroups = $userGroupDao->getByContextId($context->getId());
 		$userGroupOptions = array('' => __('grid.user.allRoles'));
 		while ($userGroup = $userGroups->next()) {
 			$userGroupOptions[$userGroup->getId()] = $userGroup->getLocalizedName();
 		}
 
-		// Import PKPUserDAO to define the USER_FIELD_* constants.
-		import('lib.pkp.classes.user.PKPUserDAO');
+		// Import UserDAO to define the USER_FIELD_* constants.
+		import('lib.pkp.classes.user.UserDAO');
 		$fieldOptions = array(
 			IDENTITY_SETTING_GIVENNAME => 'user.givenName',
 			IDENTITY_SETTING_FAMILYNAME => 'user.familyName',
@@ -267,4 +267,4 @@ class ExportableUsersGridHandler extends GridHandler {
 	}
 }
 
-?>
+

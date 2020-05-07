@@ -7,9 +7,9 @@
 /**
  * @file tests/plugins/PluginTestCase.inc.php
  *
- * Copyright (c) 2014-2018 Simon Fraser University
- * Copyright (c) 2000-2018 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class PluginTestCase
  * @ingroup tests_plugins
@@ -56,7 +56,9 @@ class PluginTestCase extends DatabaseTestCase {
 		// Mock request and router.
 		import('lib.pkp.classes.core.PKPRouter');
 		import('classes.core.Request');
-		$mockRequest = $this->getMock('Request', array('getRouter', 'getUser'));
+		$mockRequest = $this->getMockBuilder(Request::class)
+			->setMethods(array('getRouter', 'getUser'))
+			->getMock();
 		$router = new PKPRouter();
 		$mockRequest->expects($this->any())
 		            ->method('getRouter')
@@ -91,7 +93,7 @@ class PluginTestCase extends DatabaseTestCase {
 		// self::assertTrue($installer->execute());
 
 		// Test whether the filter groups have been installed.
-		$filterGroupDao = DAORegistry::getDAO('FilterGroupDAO');
+		$filterGroupDao = DAORegistry::getDAO('FilterGroupDAO'); /* @var $filterGroupDao FilterGroupDAO */
 		foreach($filterGroups as $filterGroupSymbolic) {
 			// Check the group.
 			self::assertInstanceOf('FilterGroup', $filterGroupDao->getObjectBySymbolic($filterGroupSymbolic), $filterGroupSymbolic);
@@ -125,7 +127,6 @@ class PluginTestCase extends DatabaseTestCase {
 		return array(
 			'clientCharset' => Config::getVar('i18n', 'client_charset'),
 			'connectionCharset' => Config::getVar('i18n', 'connection_charset'),
-			'databaseCharset' => Config::getVar('i18n', 'database_charset'),
 			'databaseDriver' => Config::getVar('database', 'driver'),
 			'databaseHost' => Config::getVar('database', 'host'),
 			'databaseUsername' => Config::getVar('database', 'username'),
@@ -134,4 +135,4 @@ class PluginTestCase extends DatabaseTestCase {
 		);
 	}
 }
-?>
+

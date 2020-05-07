@@ -3,9 +3,9 @@
 /**
  * @file tests/classes/validation/ValidatorORCIDTest.inc.php
  *
- * Copyright (c) 2013-2018 Simon Fraser University
- * Copyright (c) 2000-2018 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2013-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class ValidatorORCIDTest
  * @ingroup tests_classes_validation
@@ -34,4 +34,4 @@ class ValidatorORCIDTest extends PKPTestCase {
 	}
 }
 
-?>
+

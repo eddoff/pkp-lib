@@ -2,9 +2,9 @@
 /**
  * @file controllers/grid/files/submissionDocuments/form/NewLibraryFileForm.inc.php
  *
- * Copyright (c) 2014-2018 Simon Fraser University
- * Copyright (c) 2003-2018 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class FileForm
  * @ingroup controllers_grid_files_submissionDocuments_form
@@ -42,25 +42,26 @@ class NewLibraryFileForm extends LibraryFileForm {
 	/**
 	 * @copydoc LibraryFileForm::fetch()
 	 */
-	function fetch($request) {
+	function fetch($request, $template = null, $display = false) {
 		$templateMgr = TemplateManager::getManager($request);
 		$templateMgr->assign('submissionId', $this->getSubmissionId());
-		return parent::fetch($request);
+		return parent::fetch($request, $template, $display);
 	}
 
 	/**
-	 * Save the new library file.
-	 * @param $userId int The current user ID (for validation purposes).
+	 * @copydoc Form::execute()
 	 * @return $fileId int The new library file id.
 	 */
-	function execute($userId) {
+	function execute(...$functionArgs) {
+		$userId = Application::get()->getRequest()->getUser()->getId();
+
 		// Fetch the temporary file storing the uploaded library file
-		$temporaryFileDao = DAORegistry::getDAO('TemporaryFileDAO');
+		$temporaryFileDao = DAORegistry::getDAO('TemporaryFileDAO'); /* @var $temporaryFileDao TemporaryFileDAO */
 		$temporaryFile = $temporaryFileDao->getTemporaryFile(
 			$this->getData('temporaryFileId'),
 			$userId
 		);
-		$libraryFileDao = DAORegistry::getDAO('LibraryFileDAO');
+		$libraryFileDao = DAORegistry::getDAO('LibraryFileDAO'); /* @var $libraryFileDao LibraryFileDAO */
 		$libraryFileManager = new LibraryFileManager($this->contextId);
 
 		// Convert the temporary file to a library file and store
@@ -78,6 +79,8 @@ class NewLibraryFileForm extends LibraryFileForm {
 		$temporaryFileManager = new TemporaryFileManager();
 		$temporaryFileManager->deleteById($this->getData('temporaryFileId'), $userId);
 
+		parent::execute(...$functionArgs);
+
 		return $fileId;
 	}
 
@@ -90,4 +93,4 @@ class NewLibraryFileForm extends LibraryFileForm {
 	}
 }
 
-?>
+

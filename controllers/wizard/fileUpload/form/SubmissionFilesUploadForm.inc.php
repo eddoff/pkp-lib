@@ -3,9 +3,9 @@
 /**
  * @file controllers/wizard/fileUpload/form/SubmissionFilesUploadForm.inc.php
  *
- * Copyright (c) 2014-2018 Simon Fraser University
- * Copyright (c) 2003-2018 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class SubmissionFilesUploadForm
  * @ingroup controllers_wizard_fileUpload_form
@@ -82,7 +82,7 @@ class SubmissionFilesUploadForm extends PKPSubmissionFilesUploadBaseForm {
 	/**
 	 * @copydoc Form::validate()
 	 */
-	function validate($request) {
+	function validate($callHooks = true) {
 		// Is this a revision?
 		$revisedFileId = $this->getRevisedFileId();
 		if ($this->getData('revisionOnly')) {
@@ -90,6 +90,7 @@ class SubmissionFilesUploadForm extends PKPSubmissionFilesUploadBaseForm {
 		}
 
 		// Retrieve the request context.
+		$request = Application::get()->getRequest();
 		$router = $request->getRouter();
 		$context = $router->getContext($request);
 		if (
@@ -101,33 +102,32 @@ class SubmissionFilesUploadForm extends PKPSubmissionFilesUploadBaseForm {
 				$this, 'genreId', FORM_VALIDATOR_REQUIRED_VALUE,
 				'submission.upload.noGenre',
 				function($genreId) use ($context) {
-					$genreDao = DAORegistry::getDAO('GenreDAO');
+					$genreDao = DAORegistry::getDAO('GenreDAO'); /* @var $genreDao GenreDAO */
 					return is_a($genreDao->getById($genreId, $context->getId()), 'Genre');
 				}
 			));
 		}
 
-		return parent::validate();
+		return parent::validate($callHooks);
 	}
 
 	/**
 	 * @copydoc Form::fetch()
 	 */
-	function fetch($request) {
+	function fetch($request, $template = null, $display = false) {
 		// Retrieve available submission file genres.
 		$genreList = $this->_retrieveGenreList($request);
 		$this->setData('submissionFileGenres', $genreList);
 
-		return parent::fetch($request);
+		return parent::fetch($request, $template, $display);
 	}
 
 	/**
 	 * Save the submission file upload form.
 	 * @see Form::execute()
-	 * @param $request Request
 	 * @return SubmissionFile if successful, otherwise null
 	 */
-	function execute($request) {
+	function execute(...$functionParams) {
 		// Identify the file genre and category.
 		$revisedFileId = $this->getRevisedFileId();
 		if ($revisedFileId) {
@@ -139,6 +139,7 @@ class SubmissionFilesUploadForm extends PKPSubmissionFilesUploadBaseForm {
 		}
 
 		// Identify the uploading user.
+		$request = Application::get()->getRequest();
 		$user = $request->getUser();
 		assert(is_a($user, 'User'));
 
@@ -176,6 +177,11 @@ class SubmissionFilesUploadForm extends PKPSubmissionFilesUploadBaseForm {
 				'username' => $user->getUsername()
 			)
 		);
+		
+		$hookResult = parent::execute($submissionFile, ...$functionParams);
+		if ($hookResult) { 
+			return $hookResult;
+		}
 
 		return $submissionFile;
 	}
@@ -205,4 +211,4 @@ class SubmissionFilesUploadForm extends PKPSubmissionFilesUploadBaseForm {
 	}
 }
 
-?>
+

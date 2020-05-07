@@ -8,15 +8,16 @@
 /**
  * @file classes/identity/Identity.inc.php
  *
- * Copyright (c) 2014-2018 Simon Fraser University
- * Copyright (c) 2000-2018 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class Identity
  * @ingroup identity
  *
  * @brief Basic class providing common functionality for users and authors in the system.
  */
+
 
 define('IDENTITY_SETTING_GIVENNAME', 'givenName');
 define('IDENTITY_SETTING_FAMILYNAME', 'familyName');
@@ -35,7 +36,7 @@ class Identity extends DataObject {
 		$localePrecedence = array($preferredLocale);
 		// the users register for the site, thus
 		// the site primary locale is the default locale
-		$site = Application::getRequest()->getSite();
+		$site = Application::get()->getRequest()->getSite();
 		if (!in_array($site->getPrimaryLocale(), $localePrecedence)) $localePrecedence[] = $site->getPrimaryLocale();
 		// for settings other than givenName, familyName and affiliation (that are required for registration)
 		// consider also the context primary locale
@@ -79,7 +80,7 @@ class Identity extends DataObject {
 			if (is_null($defaultLocale)) {
 				// the users register for the site, thus
 				// the site primary locale is the default locale
-				$site = Application::getRequest()->getSite();
+				$site = Application::get()->getRequest()->getSite();
 				$defaultLocale = $site->getPrimaryLocale();
 			}
 			$locale = $defaultLocale;
@@ -150,7 +151,7 @@ class Identity extends DataObject {
 			if (is_null($defaultLocale)) {
 				// the users register for the site, thus
 				// the site primary locale is the default locale
-				$site = Application::getRequest()->getSite();
+				$site = Application::get()->getRequest()->getSite();
 				$defaultLocale =  $site->getPrimaryLocale();
 			}
 			$locale = $defaultLocale;
@@ -244,15 +245,14 @@ class Identity extends DataObject {
 
 	/**
 	 * Get localized country
-	 * @return string
+	 * @return string?
 	 */
 	function getCountryLocalized() {
-		$countryDao = DAORegistry::getDAO('CountryDAO');
-		$country = $this->getCountry();
-		if ($country) {
-			return $countryDao->getCountry($country);
-		}
-		return null;
+		$countryCode = $this->getCountry();
+		if (!$countryCode) return null;
+		$isoCodes = new \Sokil\IsoCodes\IsoCodesFactory();
+		$country = $isoCodes->getCountries()->getByAlpha2($countryCode);
+		return $country?$country->getLocalName():null;
 	}
 
 	/**
@@ -307,4 +307,4 @@ class Identity extends DataObject {
 
 }
 
-?>
+

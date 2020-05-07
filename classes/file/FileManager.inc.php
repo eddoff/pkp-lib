@@ -9,9 +9,9 @@
 /**
  * @file classes/file/FileManager.inc.php
  *
- * Copyright (c) 2014-2018 Simon Fraser University
- * Copyright (c) 2000-2018 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  * ePUB mime type added  Leah M Root (rootl) SUNY Geneseo
  * @class FileManager
  * @ingroup file
@@ -58,7 +58,26 @@ class FileManager {
 	 * @return boolean
 	 */
 	function uploadError($fileName) {
-		return (isset($_FILES[$fileName]) && $_FILES[$fileName]['error'] != 0);
+		return (isset($_FILES[$fileName]) && $_FILES[$fileName]['error'] != UPLOAD_ERR_OK);
+	}
+
+	/**
+	 * Get the error code of a file upload
+	 * @see http://php.net/manual/en/features.file-upload.errors.php
+	 * @param $fileName string the name of the file used in the POST form
+	 * @return integer
+	 */
+	function getUploadErrorCode($fileName) {
+		return $_FILES[$fileName]['error'];
+	}
+
+	/**
+	 * Get the filename of the first uploaded file in the $_FILES array. The
+	 * returned filename is the value used in the form that submitted the request.
+	 * @return string
+	 */
+	function getFirstUploadedPostName() {
+		return key($_FILES);
 	}
 
 	/**
@@ -411,6 +430,8 @@ class FileManager {
 				return '.pdf';
 			case 'application/word':
 				return '.doc';
+			case 'text/css':
+				return '.css';
 			case 'text/html':
 				return '.html';
 			case 'application/epub+zip':
@@ -441,6 +462,7 @@ class FileManager {
 			case 'image/ico':
 				return '.ico';
 			case 'image/svg+xml':
+			case 'image/svg':
 				return '.svg';
 			case 'application/x-shockwave-flash':
 				return '.swf';
@@ -603,5 +625,3 @@ class FileManager {
 		}
 	}
 }
-
-?>

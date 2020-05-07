@@ -3,9 +3,9 @@
 /**
  * @file classes/user/form/ChangePasswordForm.inc.php
  *
- * Copyright (c) 2014-2018 Simon Fraser University
- * Copyright (c) 2003-2018 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class ChangePasswordForm
  * @ingroup user_form
@@ -66,16 +66,15 @@ class ChangePasswordForm extends Form {
 	}
 
 	/**
-	 * Fetch the form.
-	 * @param $request PKPRequest
+	 * @copydoc Form::fetch
 	 */
-	function fetch($request) {
+	function fetch($request, $template = null, $display = false) {
 		$templateMgr = TemplateManager::getManager();
 		$templateMgr->assign(array(
 			'minPasswordLength' => $this->getSite()->getMinPasswordLength(),
 			'username' =>  $this->getUser()->getUsername(),
 		));
-		return parent::fetch($request);
+		return parent::fetch($request, $template, $display);
 	}
 
 	/**
@@ -86,13 +85,13 @@ class ChangePasswordForm extends Form {
 	}
 
 	/**
-	 * Save new password.
+	 * @copydoc Form::execute()
 	 */
-	function execute() {
+	function execute(...$functionArgs) {
 		$user = $this->getUser();
 
 		if ($user->getAuthId()) {
-			$authDao = DAORegistry::getDAO('AuthSourceDAO');
+			$authDao = DAORegistry::getDAO('AuthSourceDAO'); /* @var $authDao AuthSourceDAO */
 			$auth = $authDao->getPlugin($user->getAuthId());
 		}
 
@@ -103,9 +102,11 @@ class ChangePasswordForm extends Form {
 			$user->setPassword(Validation::encryptCredentials($user->getUsername(), $this->getData('password')));
 		}
 
-		$userDao = DAORegistry::getDAO('UserDAO');
+		parent::execute(...$functionArgs);
+
+		$userDao = DAORegistry::getDAO('UserDAO'); /* @var $userDao UserDAO */
 		$userDao->updateObject($user);
 	}
 }
 
-?>
+

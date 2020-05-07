@@ -3,9 +3,9 @@
 /**
  * @file controllers/grid/files/copyedit/CopyeditFilesGridHandler.inc.php
  *
- * Copyright (c) 2014-2018 Simon Fraser University
- * Copyright (c) 2003-2018 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class CopyeditFilesGridHandler
  * @ingroup controllers_grid_files_copyedit
@@ -64,7 +64,7 @@ class CopyeditFilesGridHandler extends FileListGridHandler {
 			array(ROLE_ID_MANAGER, ROLE_ID_ASSISTANT, ROLE_ID_SUB_EDITOR)
 			// Authors may also view this grid, and shouldn't be able to do anything (just view).
 		))) {
-			$this->setCapabilities(new FilesGridCapabilities(FILE_GRID_EDIT|FILE_GRID_MANAGE|FILE_GRID_VIEW_NOTES));
+			$this->setCapabilities(new FilesGridCapabilities(FILE_GRID_EDIT|FILE_GRID_MANAGE|FILE_GRID_VIEW_NOTES|FILE_GRID_DELETE));
 		}
 		parent::initialize($request, $args);
 	}
@@ -83,4 +83,4 @@ class CopyeditFilesGridHandler extends FileListGridHandler {
 	}
 }
 
-?>
+

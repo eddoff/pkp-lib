@@ -3,9 +3,9 @@
 /**
  * @file pages/announcement/AnnouncementHandler.inc.php
  *
- * Copyright (c) 2014-2018 Simon Fraser University
- * Copyright (c) 2000-2018 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class PKPAnnouncementHandler
  * @ingroup pages_announcement
@@ -44,13 +44,13 @@ class AnnouncementHandler extends Handler {
 		$this->setupTemplate($request);
 
 		$context = $request->getContext();
-		$announcementsIntro = $context->getLocalizedSetting('announcementsIntroduction');
+		$announcementsIntro = $context->getLocalizedData('announcementsIntroduction');
 
 		$templateMgr = TemplateManager::getManager($request);
 		$templateMgr->assign('announcementsIntroduction', $announcementsIntro);
 
 
-		$announcementDao = DAORegistry::getDAO('AnnouncementDAO');
+		$announcementDao = DAORegistry::getDAO('AnnouncementDAO'); /* @var $announcementDao AnnouncementDAO */
 		// TODO the announcements list should support pagination
 		import('lib.pkp.classes.db.DBResultRange');
 		$rangeInfo = new DBResultRange(50, -1);
@@ -71,7 +71,7 @@ class AnnouncementHandler extends Handler {
 
 		$context = $request->getContext();
 		$announcementId = (int) array_shift($args);
-		$announcementDao = DAORegistry::getDAO('AnnouncementDAO');
+		$announcementDao = DAORegistry::getDAO('AnnouncementDAO'); /* @var $announcementDao AnnouncementDAO */
 		$announcement = $announcementDao->getById($announcementId);
 		if ($announcement && $announcement->getAssocType() == Application::getContextAssocType() && $announcement->getAssocId() == $context->getId() && ($announcement->getDateExpire() == null || strtotime($announcement->getDateExpire()) > time())) {
 			$templateMgr = TemplateManager::getManager($request);
@@ -83,4 +83,4 @@ class AnnouncementHandler extends Handler {
 	}
 }
 
-?>
+

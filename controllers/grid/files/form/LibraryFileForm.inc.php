@@ -3,9 +3,9 @@
 /**
  * @file controllers/grid/files/form/LibraryFileForm.inc.php
  *
- * Copyright (c) 2014-2018 Simon Fraser University
- * Copyright (c) 2003-2018 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class LibraryFileForm
  * @ingroup controllers_grid_file_form
@@ -47,11 +47,9 @@ class LibraryFileForm extends Form {
 	}
 
 	/**
-	 * Fetch
-	 * @param $request PKPRequest
-	 * @see Form::fetch()
+	 * @copydoc Form::fetch()
 	 */
-	function fetch($request) {
+	function fetch($request, $template = null, $display = false) {
 		AppLocale::requireComponents(LOCALE_COMPONENT_APP_MANAGER);
 
 		// load the file types for the selector on the form.
@@ -59,7 +57,7 @@ class LibraryFileForm extends Form {
 		$fileTypeKeys = $this->libraryFileManager->getTypeTitleKeyMap();
 		$templateMgr->assign('fileTypes', $fileTypeKeys);
 
-		return parent::fetch($request);
+		return parent::fetch($request, $template, $display);
 	}
 
 	/**
@@ -71,4 +69,4 @@ class LibraryFileForm extends Form {
 	}
 }
 
-?>
+

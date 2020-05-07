@@ -8,9 +8,9 @@
 /**
  * @file classes/template/PKPTemplateManager.inc.php
  *
- * Copyright (c) 2014-2018 Simon Fraser University
- * Copyright (c) 2000-2018 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class TemplateManager
  * @ingroup template
@@ -35,14 +35,14 @@ define('STYLE_SEQUENCE_NORMAL', 10);
 define('STYLE_SEQUENCE_LATE', 15);
 define('STYLE_SEQUENCE_LAST', 20);
 
-define('CDN_JQUERY_VERSION', '1.11.0');
-define('CDN_JQUERY_UI_VERSION', '1.11.0');
+define('CDN_JQUERY_VERSION', '3.3.1');
+define('CDN_JQUERY_UI_VERSION', '1.12.0');
 
 define('CSS_FILENAME_SUFFIX', 'css');
 
 import('lib.pkp.classes.template.PKPTemplateResource');
 
-class PKPTemplateManager extends SmartyBC {
+class PKPTemplateManager extends Smarty {
 	/** @var array of URLs to stylesheets */
 	private $_styleSheets = array();
 
@@ -51,6 +51,9 @@ class PKPTemplateManager extends SmartyBC {
 
 	/** @var array of HTML head content to output */
 	private $_htmlHeaders = array();
+
+	/** @var array Key/value list of constants to expose in the JS interface */
+	private $_constants = array();
 
 	/** @var string Type of cacheability (Cache-Control). */
 	private $_cacheability;
@@ -95,7 +98,7 @@ class PKPTemplateManager extends SmartyBC {
 		$this->_request = $request;
 
 		$locale = AppLocale::getLocale();
-		$application = Application::getApplication();
+		$application = Application::get();
 		$router = $request->getRouter();
 		assert(is_a($router, 'PKPRouter'));
 
@@ -118,6 +121,63 @@ class PKPTemplateManager extends SmartyBC {
 			'pageTitle' => $application->getNameKey(),
 			'applicationName' => __($application->getNameKey()),
 		));
+
+		// Assign meta tags
+		if ($currentContext) {
+			$favicon = $currentContext->getLocalizedFavicon();
+			if (!empty($favicon)) {
+				$publicFileManager = new PublicFileManager();
+				$faviconDir = $request->getBaseUrl() . '/' . $publicFileManager->getContextFilesPath($currentContext->getId());
+				$this->addHeader('favicon', '<link rel="icon" href="' . $faviconDir . '/' . $favicon['uploadName'] . '">');
+			}
+		}
+
+		if (Config::getVar('general', 'installed')) {
+			$activeTheme = null;
+			$contextOrSite = $currentContext ? $currentContext : $request->getSite();
+			$allThemes = PluginRegistry::getPlugins('themes');
+			foreach ($allThemes as $theme) {
+				if ($contextOrSite->getData('themePluginPath') === $theme->getDirName()) {
+					$activeTheme = $theme;
+					break;
+				}
+			}
+			$this->assign(['activeTheme' => $activeTheme]);
+		}
+
+		$this->setConstants([
+			'REALLY_BIG_NUMBER',
+			'UPLOAD_MAX_FILESIZE',
+			'WORKFLOW_STAGE_ID_PUBLISHED',
+			'WORKFLOW_STAGE_ID_SUBMISSION',
+			'WORKFLOW_STAGE_ID_INTERNAL_REVIEW',
+			'WORKFLOW_STAGE_ID_EXTERNAL_REVIEW',
+			'WORKFLOW_STAGE_ID_EDITING',
+			'WORKFLOW_STAGE_ID_PRODUCTION',
+			'INSERT_TAG_VARIABLE_TYPE_PLAIN_TEXT',
+			'ROLE_ID_MANAGER',
+			'ROLE_ID_SITE_ADMIN',
+			'ROLE_ID_AUTHOR',
+			'ROLE_ID_REVIEWER',
+			'ROLE_ID_ASSISTANT',
+			'ROLE_ID_READER',
+			'ROLE_ID_SUB_EDITOR',
+			'ROLE_ID_SUBSCRIPTION_MANAGER',
+		]);
+
+		// Always pass these ListBuilder constants to the browser
+		// because we a ListBuilder may be loaded in an ajax request
+		// and won't have an opportunity to pass its constants to
+		// the template manager. This is not a recommended practice,
+		// but these are the only constants from a controller that are
+		// required on the frontend. We can remove them once the
+		// ListBuilderHandler is no longer needed.
+		import('lib.pkp.classes.controllers.listbuilder.ListbuilderHandler');
+		$this->setConstants([
+			'LISTBUILDER_SOURCE_TYPE_TEXT',
+			'LISTBUILDER_SOURCE_TYPE_SELECT',
+			'LISTBUILDER_OPTGROUP_LABEL',
+		]);
 
 		if (is_a($router, 'PKPPageRouter')) {
 			$this->assign(array(
@@ -206,6 +266,22 @@ class PKPTemplateManager extends SmartyBC {
 						'contexts' => 'backend',
 					)
 				);
+
+				// A user-uploaded stylesheet
+				if ($currentContext) {
+					$contextStyleSheet = $currentContext->getData('styleSheet');
+					if ($contextStyleSheet) {
+						import('classes.file.PublicFileManager');
+						$publicFileManager = new PublicFileManager();
+						$this->addStyleSheet(
+							'contextStylesheet',
+							$request->getBaseUrl() . '/' . $publicFileManager->getContextFilesPath($currentContext->getId()) . '/' . $contextStyleSheet['uploadName'],
+							array(
+								'priority' => STYLE_SEQUENCE_LATE
+							)
+						);
+					}
+				}
 			}
 
 			// Add reading language flag based on locale
@@ -222,22 +298,6 @@ class PKPTemplateManager extends SmartyBC {
 				);
 			}
 
-			// Register colour picker assets on the appearance page
-			$this->addJavaScript(
-				'spectrum',
-				$request->getBaseUrl() . '/lib/pkp/js/lib/jquery/plugins/spectrum/spectrum.js',
-				array(
-					'contexts' => array('backend-management-settings', 'backend-admin-settings', 'backend-admin-contexts'),
-				)
-			);
-			$this->addStyleSheet(
-				'spectrum',
-				$request->getBaseUrl() . '/lib/pkp/js/lib/jquery/plugins/spectrum/spectrum.css',
-				array(
-					'contexts' => array('backend-management-settings', 'backend-admin-settings', 'backend-admin-contexts'),
-				)
-			);
-
 			// Register recaptcha on relevant pages
 			if (Config::getVar('captcha', 'recaptcha') && Config::getVar('captcha', 'captcha_on_register')) {
 				$this->addJavaScript(
@@ -251,8 +311,8 @@ class PKPTemplateManager extends SmartyBC {
 
 			// Register meta tags
 			if (Config::getVar('general', 'installed')) {
-				if (($request->getRequestedPage()=='' || $request->getRequestedPage() == 'index') && $currentContext && $currentContext->getLocalizedSetting('searchDescription')) {
-					$this->addHeader('searchDescription', '<meta name="description" content="' . $currentContext->getLocalizedSetting('searchDescription') . '">');
+				if (($request->getRequestedPage()=='' || $request->getRequestedPage() == 'index') && $currentContext && $currentContext->getLocalizedData('searchDescription')) {
+					$this->addHeader('searchDescription', '<meta name="description" content="' . $currentContext->getLocalizedData('searchDescription') . '">');
 				}
 
 				$this->addHeader(
@@ -264,7 +324,7 @@ class PKPTemplateManager extends SmartyBC {
 				);
 
 				if ($currentContext) {
-					$customHeaders = $currentContext->getLocalizedSetting('customHeaders');
+					$customHeaders = $currentContext->getLocalizedData('customHeaders');
 					if (!empty($customHeaders)) {
 						$this->addHeader('customHeaders', $customHeaders);
 					}
@@ -282,8 +342,8 @@ class PKPTemplateManager extends SmartyBC {
 			}
 
 			// Register Navigation Menus
-			import('classes.core.ServicesContainer');
-			$nmService = ServicesContainer::instance()->get('navigationMenu');
+			import('classes.core.Services');
+			$nmService = Services::get('navigationMenu');
 
 			if (Config::getVar('general', 'installed')) {
 				\HookRegistry::register('LoadHandler', array($nmService, '_callbackHandleCustomNavigationMenuItems'));
@@ -349,9 +409,8 @@ class PKPTemplateManager extends SmartyBC {
 			));
 
 			$user = $request->getUser();
-			$hasSystemNotifications = false;
 			if ($user) {
-				$notificationDao = DAORegistry::getDAO('NotificationDAO');
+				$notificationDao = DAORegistry::getDAO('NotificationDAO'); /* @var $notificationDao NotificationDAO */
 				$notifications = $notificationDao->getByUserId($user->getId(), NOTIFICATION_LEVEL_TRIVIAL);
 				if ($notifications->getCount() > 0) {
 					$this->assign('hasSystemNotifications', true);
@@ -373,12 +432,19 @@ class PKPTemplateManager extends SmartyBC {
 			$this->assign('multipleContexts', $multipleContexts);
 		}
 
-		// Load enabled block plugins and setup active sidebar variables
-		PluginRegistry::loadCategory('blocks', true);
-		$sidebarHooks = HookRegistry::getHooks('Templates::Common::Sidebar');
-		$this->assign(array(
-			'hasSidebar' => !empty($sidebarHooks),
-		));
+		if (Config::getVar('general', 'installed')) {
+			// Respond to the sidebar hook
+			if ($currentContext) {
+				$this->assign('hasSidebar', !empty($currentContext->getData('sidebar')));
+			} else {
+				$this->assign('hasSidebar', !empty($request->getSite()->getData('sidebar')));
+			}
+			HookRegistry::register('Templates::Common::Sidebar', array($this, 'displaySidebar'));
+
+			// Clear the cache whenever the active theme is changed
+			HookRegistry::register('Context::edit', array($this, 'clearThemeTemplateCache'));
+			HookRegistry::register('Site::edit', array($this, 'clearThemeTemplateCache'));
+		}
 	}
 
 
@@ -560,6 +626,17 @@ class PKPTemplateManager extends SmartyBC {
 	}
 
 	/**
+	 * Set constants to be exposed in JavaScript at pkp.const.<constant>
+	 *
+	 * @param array $names Array of constant names
+	 */
+	function setConstants($names) {
+		foreach ($names as $name) {
+			$this->_constants[$name] = constant($name);
+		}
+	}
+
+	/**
 	 * Register all files required by the core JavaScript library
 	 */
 	function registerJSLibrary() {
@@ -615,28 +692,6 @@ class PKPTemplateManager extends SmartyBC {
 			)
 		);
 
-		// Load constants for new component library
-		$const = array(
-			'ROLE_ID_MANAGER' => ROLE_ID_MANAGER,
-			'ROLE_ID_SITE_ADMIN' => ROLE_ID_SITE_ADMIN,
-			'ROLE_ID_AUTHOR' => ROLE_ID_AUTHOR,
-			'ROLE_ID_REVIEWER' => ROLE_ID_REVIEWER,
-			'ROLE_ID_ASSISTANT' => ROLE_ID_ASSISTANT,
-			'ROLE_ID_READER' => ROLE_ID_READER,
-			'ROLE_ID_SUB_EDITOR' => ROLE_ID_SUB_EDITOR,
-			'ROLE_ID_SUBSCRIPTION_MANAGER' => ROLE_ID_SUBSCRIPTION_MANAGER,
-		);
-		$output = 'pkp.const = ' . json_encode($const) . ';';
-		$this->addJavaScript(
-			'pkpAppData',
-			$output,
-			array(
-				'priority' => STYLE_SEQUENCE_LATE,
-				'contexts' => array('backend'),
-				'inline' => true,
-			)
-		);
-
 		// Load minified file if it exists
 		if (Config::getVar('general', 'enable_minified')) {
 			$this->addJavaScript(
@@ -671,7 +726,7 @@ class PKPTemplateManager extends SmartyBC {
 	 */
 	function registerJSLibraryData() {
 
-		$application = Application::getApplication();
+		$application = Application::get();
 		$context = $this->_request->getContext();
 
 		// Instantiate the namespace
@@ -681,6 +736,7 @@ class PKPTemplateManager extends SmartyBC {
 		import('lib.pkp.classes.security.Role');
 
 		$app_data = array(
+			'cdnEnabled' => Config::getVar('general', 'enable_cdn'),
 			'currentLocale' => AppLocale::getLocale(),
 			'primaryLocale' => AppLocale::getPrimaryLocale(),
 			'baseUrl' => $this->_request->getBaseUrl(),
@@ -688,14 +744,14 @@ class PKPTemplateManager extends SmartyBC {
 			'apiBasePath' => '/api/v1',
 			'pathInfoEnabled' => Config::getVar('general', 'disable_path_info') ? false : true,
 			'restfulUrlsEnabled' => Config::getVar('general', 'restful_urls') ? true : false,
+			'tinyMceContentCSS' => $this->_request->getBaseUrl() . '/plugins/generic/tinymce/styles/content.css',
+			'tinyMceContentFont' => Config::getVar('general', 'enable_cdn') ? $this->_request->getBaseUrl() .  '/plugins/generic/tinymce/styles/content-font.css' : '',
 		);
+
 		$output .= '$.pkp.app = ' . json_encode($app_data) . ';';
 
 		// Load exposed constants
-		$exposedConstants = $application->getExposedConstants();
-		if (!empty($exposedConstants)) {
-			$output .= '$.pkp.cons = ' . json_encode($exposedConstants) . ';';
-		}
+		$output .= '$.pkp.cons = ' . json_encode($this->_constants) . ';';
 
 		// Load locale keys
 		$localeKeys = $application->getJSLocaleKeys();
@@ -712,15 +768,7 @@ class PKPTemplateManager extends SmartyBC {
 		}
 
 		// Allow plugins to load data within their own namespace
-		$plugin_data = array();
-		HookRegistry::call('TemplateManager::registerJSLibraryData', array(&$plugin_data));
-
-		if (!empty($plugin_data) && is_array($plugin_data)) {
-			$output .= '$.pkp.plugins = {};';
-			foreach($plugin_data as $namespace => $data) {
-				$output .= $namespace . ' = ' . json_encode($data) . ';';
-			}
-		}
+		$output .= '$.pkp.plugins = {};';
 
 		// Load current user data
 		if (!Config::getVar('general', 'installed')) {
@@ -730,7 +778,7 @@ class PKPTemplateManager extends SmartyBC {
 			if ($user) {
 				import('lib.pkp.classes.security.RoleDAO');
 				import('lib.pkp.classes.security.UserGroupDAO');
-				$userGroupDao = DAORegistry::getDAO('UserGroupDAO');
+				$userGroupDao = DAORegistry::getDAO('UserGroupDAO'); /* @var $userGroupDao UserGroupDAO */
 				$userGroups = $userGroupDao->getByUserId($this->_request->getUser()->getId())->toArray();
 				$currentUserAccessRoles = array();
 				foreach ($userGroups as $userGroup) {
@@ -799,7 +847,7 @@ class PKPTemplateManager extends SmartyBC {
 		if ( Config::getVar('general', 'installed' ) ) {
 			$context = $this->_request->getContext();
 			if (is_a($context, 'Context')) {
-				$resourceName .= $context->getSetting('themePluginPath');
+				$resourceName .= $context->getData('themePluginPath');
 			}
 		}
 
@@ -821,6 +869,19 @@ class PKPTemplateManager extends SmartyBC {
 	 * @copydoc Smarty::display()
 	 */
 	function display($template = null, $cache_id = null, $compile_id = null, $parent = null) {
+
+		// Output global constants used in new component library
+		$output = 'pkp.const = ' . json_encode($this->_constants) . ';';
+		$this->addJavaScript(
+			'pkpAppData',
+			$output,
+			array(
+				'priority' => STYLE_SEQUENCE_LATE,
+				'contexts' => array('backend'),
+				'inline' => true,
+			)
+		);
+
 		// Give any hooks registered against the TemplateManager
 		// the opportunity to modify behavior; otherwise, display
 		// the template as usual.
@@ -849,8 +910,8 @@ class PKPTemplateManager extends SmartyBC {
 	 * Clear template compile and cache directories.
 	 */
 	function clearTemplateCache() {
-		$this->clear_compiled_tpl();
-		$this->clear_all_cache();
+		$this->clearCompiledTemplate();
+		$this->clearAllCache();
 	}
 
 	/**
@@ -860,6 +921,26 @@ class PKPTemplateManager extends SmartyBC {
 		$cacheDirectory = CacheManager::getFileCachePath();
 		$files = scandir($cacheDirectory);
 		array_map('unlink', glob(CacheManager::getFileCachePath() . DIRECTORY_SEPARATOR . '*.' . CSS_FILENAME_SUFFIX));
+	}
+
+	/**
+	 * Clear the cache when a context or site has changed it's active theme
+	 *
+	 * @param $hookName string
+	 * @param $args array [
+	 * 	@option Context|Site The new values
+	 * 	@option Context|Site The old values
+	 * 	@option array Key/value of params that were modified
+	 * 	@option Request
+	 * ]
+	 */
+	public function clearThemeTemplateCache($hookName, $args) {
+		$newContextOrSite = $args[0];
+		$contextOrSite = $args[1];
+		if ($newContextOrSite->getData('themePluginPath') !== $contextOrSite->getData('themePluginPath')) {
+			$this->clearTemplateCache();
+			$this->clearCssCache();
+		}
 	}
 
 	/**
@@ -879,7 +960,7 @@ class PKPTemplateManager extends SmartyBC {
 		if ($instance === null) {
 			$instance = new TemplateManager();
 			$themes = PluginRegistry::getPlugins('themes');
-			if (is_null($themes)) {
+			if (empty($themes)) {
 				$themes = PluginRegistry::loadCategory('themes', true);
 			}
 			$instance->initialize($request);
@@ -898,6 +979,45 @@ class PKPTemplateManager extends SmartyBC {
 			$this->_fbv = new FormBuilderVocabulary();
 		}
 		return $this->_fbv;
+	}
+
+	/**
+	 * Display the sidebar
+	 *
+	 * @param $hookName string
+	 * @param $args array [
+	 *		@option array Params passed to the hook
+	 *		@option Smarty
+	 *		@option string The output
+	 * ]
+	 */
+	public function displaySidebar($hookName, $args) {
+		$params =& $args[0];
+		$smarty =& $args[1];
+		$output =& $args[2];
+
+		if ($this->_request->getContext()) {
+			$blocks = $this->_request->getContext()->getData('sidebar');
+		} else {
+			$blocks = $this->_request->getSite()->getData('sidebar');
+		}
+
+		if (empty($blocks)) {
+			return false;
+		}
+
+		$plugins = PluginRegistry::loadCategory('blocks', true);
+		if (empty($plugins)) {
+			return false;
+		}
+
+		foreach ($blocks as $pluginName) {
+			if (!empty($plugins[$pluginName])) {
+				$output .= $plugins[$pluginName]->getContents($smarty, $this->_request);
+			}
+		}
+
+		return false;
 	}
 
 
@@ -960,7 +1080,7 @@ class PKPTemplateManager extends SmartyBC {
 	}
 
 	/**
-	 * Smarty usage: {help file="someFile.md" section="someSection" textKey="some.text.key"}
+	 * Smarty usage: {help file="someFile" section="someSection" textKey="some.text.key"}
 	 *
 	 * Custom Smarty function for displaying a context-sensitive help link.
 	 * @param $smarty Smarty
@@ -1139,7 +1259,7 @@ class PKPTemplateManager extends SmartyBC {
 			// from the parameters array. Variables remaining in params will be
 			// passed along to Request::url as extra parameters.
 			$context = array();
-			$application = Application::getApplication();
+			$application = Application::get();
 			$contextList = $application->getContextList();
 			foreach ($contextList as $contextName) {
 				if (isset($parameters[$contextName])) {
@@ -1179,7 +1299,7 @@ class PKPTemplateManager extends SmartyBC {
 		}
 
 		// Check the router
-		$dispatcher = PKPApplication::getDispatcher();
+		$dispatcher = Application::get()->getDispatcher();
 		$routerShortcuts = array_keys($dispatcher->getRouterNames());
 		assert(in_array($router, $routerShortcuts));
 
@@ -1360,13 +1480,13 @@ class PKPTemplateManager extends SmartyBC {
 	function smartyLoadUrlInEl($params, $smarty) {
 		// Required Params
 		if (!isset($params['el'])) {
-			$smarty->trigger_error("el parameter is missing from load_url_in_el");
+			throw new Exception("el parameter is missing from load_url_in_el");
 		}
 		if (!isset($params['url'])) {
-			$smarty->trigger_error("url parameter is missing from load_url_in_el");
+			throw new Exception("url parameter is missing from load_url_in_el");
 		}
 		if (!isset($params['id'])) {
-			$smarty->trigger_error("id parameter is missing from load_url_in_el");
+			throw new Exception("id parameter is missing from load_url_in_el");
 		}
 
 		$this->assign(array(
@@ -1433,8 +1553,13 @@ class PKPTemplateManager extends SmartyBC {
 	function smartyLoadStylesheet($params, $smarty) {
 
 		if (empty($params['context'])) {
-			$context = 'frontend';
+			$params['context'] = 'frontend';
 		}
+
+		if (!defined('SESSION_DISABLE_INIT')) {
+			$versionDao = DAORegistry::getDAO('VersionDAO'); /* @var $versionDao VersionDAO */
+			$appVersion = $versionDao->getCurrentVersion()->getVersionString();
+		} else $appVersion = null;
 
 		$stylesheets = $this->getResourcesByContext($this->_styleSheets, $params['context']);
 
@@ -1446,12 +1571,57 @@ class PKPTemplateManager extends SmartyBC {
 				if (!empty($style['inline'])) {
 					$output .= '<style type="text/css">' . $style['style'] . '</style>';
 				} else {
+					if ($appVersion && strpos($style['style'], '?') === false) {
+						$style['style'] .= '?v=' . $appVersion;
+					}
 					$output .= '<link rel="stylesheet" href="' . $style['style'] . '" type="text/css" />';
 				}
 			}
 		}
 
 		return $output;
+	}
+
+	/**
+	 * Inject default styles into a HTML galley
+	 *
+	 * Any styles assigned to the `htmlGalley` context will be injected into the
+	 * galley unless the galley already has an embedded CSS file.
+	 *
+	 * @param $htmlContent string The HTML file content
+	 * @param $embeddedFiles array Additional files embedded in this galley
+	 */
+	function loadHtmlGalleyStyles($htmlContent, $embeddedFiles) {
+
+		if (empty($htmlContent)) {
+			return $htmlContent;
+		}
+
+		$hasEmbeddedStyle = false;
+		foreach ($embeddedFiles as $embeddedFile) {
+			if ($embeddedFile->getFileType() === 'text/css') {
+				$hasEmbeddedStyle = true;
+				break;
+			}
+		}
+
+		if ($hasEmbeddedStyle) {
+			return $htmlContent;
+		}
+
+		$links = '';
+		$styles = $this->getResourcesByContext($this->_styleSheets, 'htmlGalley');
+
+		if (!empty($styles)) {
+			ksort($styles);
+			foreach ($styles as $priorityGroup) {
+				foreach ($priorityGroup as $htmlStyle) {
+					$links .= '<link rel="stylesheet" href="' . $htmlStyle['style'] . '" type="text/css">' . "\n";
+				}
+			}
+		}
+
+		return str_ireplace('<head>', '<head>' . "\n" . $links, $htmlContent);
 	}
 
 	/**
@@ -1468,6 +1638,11 @@ class PKPTemplateManager extends SmartyBC {
 			$params['context'] = 'frontend';
 		}
 
+		if (!defined('SESSION_DISABLE_INIT')) {
+			$versionDao = DAORegistry::getDAO('VersionDAO'); /* @var $versionDao VersionDAO */
+			$appVersion = defined('SESSION_DISABLE_INIT') ? null : $versionDao->getCurrentVersion()->getVersionString();
+		} else $appVersion = null;
+
 		$scripts = $this->getResourcesByContext($this->_javaScripts, $params['context']);
 
 		ksort($scripts);
@@ -1478,6 +1653,9 @@ class PKPTemplateManager extends SmartyBC {
 				if ($data['inline']) {
 					$output .= '<script type="text/javascript">' . $data['script'] . '</script>';
 				} else {
+					if ($appVersion && strpos($data['script'], '?') === false) {
+						$data['script'] .= '?v=' . $appVersion;
+					}
 					$output .= '<script src="' . $data['script'] . '" type="text/javascript"></script>';
 				}
 			}
@@ -1533,7 +1711,7 @@ class PKPTemplateManager extends SmartyBC {
 
 		// Don't load menus for an area that's not registered by the active theme
 		$themePlugins = PluginRegistry::getPlugins('themes');
-		if (is_null($themePlugins)) {
+		if (empty($themePlugins)) {
 			$themePlugins = PluginRegistry::loadCategory('themes', true);
 		}
 		$activeThemeNavigationAreas = array();
@@ -1551,16 +1729,14 @@ class PKPTemplateManager extends SmartyBC {
 			$menuTemplatePath = $declaredMenuTemplatePath;
 		}
 
-		$navigationMenuDao = DAORegistry::getDAO('NavigationMenuDAO');
+		$navigationMenuDao = DAORegistry::getDAO('NavigationMenuDAO'); /* @var $navigationMenuDao NavigationMenuDAO */
 
 		$output = '';
 		$navigationMenus = $navigationMenuDao->getByArea($contextId, $areaName)->toArray();
 		if (isset($navigationMenus[0])) {
 			$navigationMenu = $navigationMenus[0];
-			import('classes.core.ServicesContainer');
-			ServicesContainer::instance()
-				->get('navigationMenu')
-				->getMenuTree($navigationMenu);
+			import('classes.core.Services');
+			Services::get('navigationMenu')->getMenuTree($navigationMenu);
 		}
 
 
@@ -1670,7 +1846,7 @@ class PKPTemplateManager extends SmartyBC {
 
 		$matching_files = array();
 
-		$genreDao = DAORegistry::getDAO('GenreDAO');
+		$genreDao = DAORegistry::getDAO('GenreDAO'); /* @var $genreDao GenreDAO */
 		foreach ($params['files'] as $file) {
 			switch ($params['by']) {
 
@@ -1679,7 +1855,7 @@ class PKPTemplateManager extends SmartyBC {
 					if (!$genre->getDependent() && method_exists($file, 'getChapterId')) {
 						if ($params['value'] === 'any' && $file->getChapterId()) {
 							$matching_files[] = $file;
-						} elseif($file->getChapterId() === $params['value']) {
+						} elseif($file->getChapterId() == $params['value']) {
 							$matching_files[] = $file;
 						} elseif ($params['value'] == 0 && !$file->getChapterId()) {
 							$matching_files[] = $file;
@@ -1715,6 +1891,25 @@ class PKPTemplateManager extends SmartyBC {
 
 		$smarty->assign($params['assign'], $matching_files);
 	}
-}
 
-?>
+	/**
+	 * DEPRECATED wrapper for Smarty2 backwards compatibility
+	 * @param $varname
+	 */
+	public function get_template_vars($varname = null) {
+		if (Config::getVar('debug', 'deprecation_warnings')) trigger_error('Deprecated call to Smarty2 function ' .  __FUNCTION__);
+		return $this->getTemplateVars($varname);
+	}
+
+	/**
+	 * DEPRECATED wrapper for Smarty2 backwards compatibility
+	 * @param $name
+	 * @param $impl
+	 * @param $cacheable
+	 * @param $cache_attrs
+	 */
+	public function register_function($name, $impl, $cacheable = true, $cache_attrs = null) {
+		if (Config::getVar('debug', 'deprecation_warnings')) trigger_error('Deprecated call to Smarty2 function ' .  __FUNCTION__);
+		$this->registerPlugin('function', $name, $impl, $cacheable, $cache_attrs);
+	}
+}

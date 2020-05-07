@@ -3,9 +3,9 @@
 /**
  * @file tests/classes/filter/FilterDAOTest.php
  *
- * Copyright (c) 2014-2018 Simon Fraser University
- * Copyright (c) 2000-2018 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class FilterDAOTest
  * @ingroup tests_classes_filter
@@ -26,7 +26,7 @@ class FilterDAOTest extends DatabaseTestCase {
 		return array('filters', 'filter_settings', 'filter_groups');
 	}
 
-	protected function setUp() {
+	protected function setUp() : void {
 		parent::setUp();
 
 		// Create a test filter group.
@@ -165,4 +165,4 @@ class FilterDAOTest extends DatabaseTestCase {
 		self::assertNull($filterDao->getObjectById($filterId));
 	}
 }
-?>
+

@@ -3,9 +3,9 @@
 /**
  * @file controllers/grid/users/reviewer/form/ReviewerGossipForm.inc.php
  *
- * Copyright (c) 2014-2018 Simon Fraser University
- * Copyright (c) 2000-2018 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class ReviewerGossipForm
  * @ingroup controllers_grid_users_reviewer_form
@@ -49,26 +49,26 @@ class ReviewerGossipForm extends Form {
 	/**
 	 * @copydoc Form::fetch()
 	 */
-	function fetch($request) {
+	function fetch($request, $template = null, $display = false) {
 		$templateMgr = TemplateManager::getManager($request);
 		$templateMgr->assign(array(
 			'requestArgs' => $this->_requestArgs,
 			'gossip' => $this->_user->getGossip(),
 		));
 
-		return parent::fetch($request);
+		return parent::fetch($request, $template, $display);
 	}
 
 	/**
 	 * @copydoc Form::execute()
 	 */
-	function execute() {
+	function execute(...$functionArgs) {
 		$this->_user->setGossip($this->getData('gossip'));
-		$userDao = DAORegistry::getDAO('UserDAO');
+		$userDao = DAORegistry::getDAO('UserDAO'); /* @var $userDao UserDAO */
 		$userDao->updateObject($this->_user);
-
+		parent::execute(...$functionArgs);
 		return $user;
 	}
 }
 
-?>
+

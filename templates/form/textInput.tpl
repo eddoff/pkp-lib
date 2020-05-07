@@ -1,9 +1,9 @@
 {**
  * templates/form/textInput.tpl
  *
- * Copyright (c) 2014-2018 Simon Fraser University
- * Copyright (c) 2000-2018 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * form text input
  *}
@@ -52,13 +52,13 @@
 	</span>
 {else}
 	{* This is not a multilingual control or there is only one locale available *}
-	<input	type="{if $FBV_isPassword}password{elseif $FBV_isTypeURL}url{else}text{/if}"
+	<input	type="{if $FBV_isPassword}password{elseif $FBV_isTypeURL}url{elseif $FBV_isTypeSearch}search{else}text{/if}"
 		{$FBV_textInputParams}
 		class="field text{if $FBV_class} {$FBV_class|escape}{/if}{if $FBV_validation} {$FBV_validation}{/if}"
 		{if $FBV_disabled} disabled="disabled"{/if}
 		{if $FBV_readonly} readonly="readonly"{/if}
 		name="{$FBV_name|escape}{if $FBV_multilingual}[{$formLocale|escape}]{/if}"
-		value="{if $FBV_multilingual}{$FBV_value[$formLocale]|escape}{else}{$FBV_value|escape}{/if}"
+		value="{if $FBV_multilingual}{$FBV_value[$formLocale]|escape}{elseif $FBV_class|strstr:"datepicker" && $FBV_value!==null}{$FBV_value|date_format:$dateFormatShort|escape}{else}{$FBV_value|escape}{/if}"
 		id="{$FBV_id|escape}{$uniqId}"
 		{if $FBV_tabIndex} tabindex="{$FBV_tabIndex|escape}"{/if}
 		{if $FBV_required} required aria-required="true"{/if}
@@ -68,7 +68,7 @@
 	{if $FBV_class|strstr:"datepicker"} 
 		<input data-date-format="{$dateFormatShort|dateformatPHP2JQueryDatepicker}" type="hidden" 
 		name="{$FBV_name|escape}"
-		value="{$FBV_value|date_format:"%Y-%m-%d"|escape}"
+		value="{if !empty($FBV_value)}{$FBV_value|date_format:"%Y-%m-%d"|escape}{/if}"
 		id="{$FBV_id|escape}{$uniqId}-altField" />
 	{/if}
 

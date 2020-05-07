@@ -3,9 +3,9 @@
 /**
  * @file lib/pkp/controllers/grid/users/stageParticipant/form/PKPStageParticipantNotifyForm.inc.php
  *
- * Copyright (c) 2014-2018 Simon Fraser University
- * Copyright (c) 2003-2018 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class PKPStageParticipantNotifyForm
  * @ingroup controllers_grid_users_stageParticipant_form
@@ -14,7 +14,7 @@
  */
 
 import('lib.pkp.classes.form.Form');
-import('classes.core.ServicesContainer');
+import('classes.core.Services');
 
 abstract class PKPStageParticipantNotifyForm extends Form {
 	/** @var int The file/submission ID this form is for */
@@ -60,8 +60,8 @@ abstract class PKPStageParticipantNotifyForm extends Form {
 	/**
 	 * @copydoc Form::fetch()
 	 */
-	function fetch($request) {
-		$submissionDao = Application::getSubmissionDAO();
+	function fetch($request, $template = null, $display = false) {
+		$submissionDao = DAORegistry::getDAO('SubmissionDAO'); /* @var $submissionDao SubmissionDAO */
 		$submission = $submissionDao->getById($this->_submissionId);
 
 		// All stages can choose the default template
@@ -69,13 +69,19 @@ abstract class PKPStageParticipantNotifyForm extends Form {
 
 		// Determine if the current user can use any custom templates defined.
 		$user = $request->getUser();
-		$roleDao = DAORegistry::getDAO('RoleDAO');
-		$userRoles = $roleDao->getByUserId($user->getId(), $submission->getContextId());
+		$roleDao = DAORegistry::getDAO('RoleDAO'); /* @var $roleDao RoleDAO */
+		$userRoles = $roleDao->getByUserId($user->getId(), $submission->getData('contextId'));
 		foreach ($userRoles as $userRole) {
 			if (in_array($userRole->getId(), array(ROLE_ID_MANAGER, ROLE_ID_SUB_EDITOR, ROLE_ID_ASSISTANT))) {
-				$emailTemplateDao = DAORegistry::getDAO('EmailTemplateDAO');
-				$customTemplates = $emailTemplateDao->getCustomTemplateKeys($submission->getContextId());
-				$templateKeys = array_merge($templateKeys, $customTemplates);
+				$emailTemplatesIterator = Services::get('emailTemplate')->getMany([
+					'contextId' => $submission->getData('contextId'),
+					'isCustom' => true,
+				]);
+				$customTemplateKeys = [];
+				foreach ($emailTemplatesIterator as $emailTemplate) {
+					$customTemplateKeys[] = $emailTemplate->getData('key');
+				}
+				$templateKeys = array_merge($templateKeys, $customTemplateKeys);
 				break;
 			}
 		}
@@ -85,11 +91,12 @@ abstract class PKPStageParticipantNotifyForm extends Form {
 		if (array_key_exists($currentStageId, $stageTemplates)) {
 			$templateKeys = array_merge($templateKeys, $stageTemplates[$currentStageId]);
 		}
+		$templates = array();
 		foreach ($templateKeys as $templateKey) {
-			$template = $this->_getMailTemplate($submission, $templateKey);
-			$template->assignParams(array());
-			$template->replaceParams();
-			$templates[$templateKey] = $template->getSubject();
+			$thisTemplate = $this->_getMailTemplate($submission, $templateKey);
+			$thisTemplate->assignParams(array());
+			$thisTemplate->replaceParams();
+			$templates[$templateKey] = $thisTemplate->getSubject();
 		}
 
 		$templateMgr = TemplateManager::getManager($request);
@@ -101,7 +108,7 @@ abstract class PKPStageParticipantNotifyForm extends Form {
 		));
 
 		if ($request->getUserVar('userId')) {
-			$user = ServicesContainer::instance()->get('user')->getUser($request->getUserVar('userId'));
+			$user = Services::get('user')->get($request->getUserVar('userId'));
 			if ($user) {
 				$templateMgr->assign(array(
 					'userId' => $user->getId(),
@@ -110,27 +117,28 @@ abstract class PKPStageParticipantNotifyForm extends Form {
 			}
 		}
 
-		return parent::fetch($request);
+		return parent::fetch($request, $template, $display);
 	}
 
 	/**
 	 * @copydoc Form::readInputData()
 	 */
-	function readInputData($request) {
+	function readInputData() {
 		$this->readUserVars(array('message', 'userId', 'template'));
 	}
 
 	/**
 	 * @copydoc Form::execute()
 	 */
-	function execute($request) {
-		$submissionDao = Application::getSubmissionDAO();
+	function execute(...$functionParams) {
+		$submissionDao = DAORegistry::getDAO('SubmissionDAO'); /* @var $submissionDao SubmissionDAO */
 		$submission = $submissionDao->getById($this->_submissionId);
 		if ($this->getData('message')) {
+			$request = Application::get()->getRequest();
 			$this->sendMessage((int) $this->getData('userId'), $submission, $request);
 			$this->_logEventAndCreateNotification($request, $submission);
 		}
-		return parent::execute($request);
+		return parent::execute(...$functionParams);
 	}
 
 	/**
@@ -149,14 +157,14 @@ abstract class PKPStageParticipantNotifyForm extends Form {
 
 		$dispatcher = $request->getDispatcher();
 
-		$userDao = DAORegistry::getDAO('UserDAO');
+		$userDao = DAORegistry::getDAO('UserDAO'); /* @var $userDao UserDAO */
 		$user = $userDao->getById($userId);
 		if (isset($user)) {
 			$email->addRecipient($user->getEmail(), $user->getFullName());
 			$email->setBody($this->getData('message'));
 
-			import('classes.core.ServicesContainer');
-			$submissionUrl = ServicesContainer::instance()->get('submission')->getWorkflowUrlByUserRoles($submission, $user->getId());
+			import('classes.core.Services');
+			$submissionUrl = Services::get('submission')->getWorkflowUrlByUserRoles($submission, $user->getId());
 
 			// Parameters for various emails
 			$email->assignParams(array(
@@ -168,9 +176,16 @@ abstract class PKPStageParticipantNotifyForm extends Form {
 				'editorialContactName' => $user->getFullname(),
 				// EDITOR_ASSIGN
 				'editorUsername' => $user->getUsername(),
+				// AUTHOR ASSIGN, AUTHOR NOTIFY
+				'authorName' => $user->getFullName(),
 			));
 
-			$email->send($request);
+			if (!$email->send($request)) {
+				import('classes.notification.NotificationManager');
+				$notificationMgr = new NotificationManager();
+				$notificationMgr->createTrivialNotification($request->getUser()->getId(), NOTIFICATION_TYPE_ERROR, array('contents' => __('email.compose.error')));
+			}
+
 			// remove the INDEX_ and LAYOUT_ tasks if a user has sent the appropriate _COMPLETE email
 			switch ($template) {
 				case 'EDITOR_ASSIGN':
@@ -188,7 +203,7 @@ abstract class PKPStageParticipantNotifyForm extends Form {
 			}
 
 			// Create a query
-			$queryDao = DAORegistry::getDAO('QueryDAO');
+			$queryDao = DAORegistry::getDAO('QueryDAO'); /* @var $queryDao QueryDAO */
 			$query = $queryDao->newDataObject();
 			$query->setAssocType(ASSOC_TYPE_SUBMISSION);
 			$query->setAssocId($submission->getId());
@@ -204,7 +219,7 @@ abstract class PKPStageParticipantNotifyForm extends Form {
 			}
 
 			// Create a head note
-			$noteDao = DAORegistry::getDAO('NoteDAO');
+			$noteDao = DAORegistry::getDAO('NoteDAO'); /* @var $noteDao NoteDAO */
 			$headNote = $noteDao->newDataObject();
 			$headNote->setUserId($request->getUser()->getId());
 			$headNote->setAssocType(ASSOC_TYPE_QUERY);
@@ -244,10 +259,10 @@ abstract class PKPStageParticipantNotifyForm extends Form {
 			case 'COPYEDIT_REQUEST':
 			case 'LAYOUT_REQUEST':
 			case 'INDEX_REQUEST': return array(
-					'participantName' => __('user.name'),
-					'participantUsername' => __('user.username'),
-					'submissionUrl' => __('common.url'),
-				);
+				'participantName' => __('user.name'),
+				'participantUsername' => __('user.username'),
+				'submissionUrl' => __('common.url'),
+			);
 			case 'LAYOUT_COMPLETE':
 			case 'INDEX_COMPLETE': return array(
 				'editorialContactName' => __('user.role.editor'),
@@ -337,5 +352,3 @@ abstract class PKPStageParticipantNotifyForm extends Form {
 	 */
 	abstract protected function _getMailTemplate($submission, $templateKey, $includeSignature = true);
 }
-
-?>

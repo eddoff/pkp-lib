@@ -5,9 +5,9 @@
 /**
  * @file styles/form.less
  *
- * Copyright (c) 2014-2018 Simon Fraser University
- * Copyright (c) 2003-2018 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @ingroup pkp_form
  *
@@ -135,17 +135,26 @@
 			margin-right: 0.5em;
 		}
 
+		p {
+			display: inline-block;
+		}
+
 		li label {
 			font-size: @font-sml;
 			font-weight: @normal;
 		}
 	}
 
-	// Required feilds
+	// Required fields
 	.req {
 		font-weight: @bold;
 		color: @no;
 		padding-left: 0.25em;
+	}
+
+	// display required asterisk next to last <p> element
+	.section > label > p:last-of-type {
+		display: inline-block;
 	}
 
 	// Disabled fields

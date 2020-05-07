@@ -3,9 +3,9 @@
 /**
  * @file classes/user/form/APIProfileForm.inc.php
  *
- * Copyright (c) 2014-2018 Simon Fraser University
- * Copyright (c) 2003-2018 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class APIProfileForm
  * @ingroup user_form
@@ -21,7 +21,7 @@ class APIProfileForm extends BaseProfileForm {
 
 	/**
 	 * Constructor.
-	 * @param $user PKPUser
+	 * @param $user User
 	 */
 	public function __construct($user) {
 		parent::__construct('user/apiProfileForm.tpl', $user);
@@ -48,10 +48,10 @@ class APIProfileForm extends BaseProfileForm {
 
 	/**
 	 * Fetch the form to edit user's API key settings.
-	 * @param $request PKPRequest
 	 * @return string JSON-encoded form contents.
+	 * @see BaseProfileForm::fetch
 	 */
-	public function fetch($request) {
+	public function fetch($request, $template = null, $display = false) {
 		$user = $request->getUser();
 		$apiKey = $user->getSetting('apiKey');
 		$secret = Config::getVar('security', 'api_key_secret', '');
@@ -70,14 +70,14 @@ class APIProfileForm extends BaseProfileForm {
 			'apiKeyEnabled' => $user->getSetting('apiKeyEnabled'),
 			'apiKey' => $jwt,
 		));
-		return parent::fetch($request);
+		return parent::fetch($request, $template, $display);
 	}
 
 	/**
-	 * Save user's API key settings form.
-	 * @param $request PKPRequest
+	 * @copydoc Form::execute()
 	 */
-	function execute($request) {
+	function execute(...$functionArgs) {
+		$request = Application::get()->getRequest();
 		$user = $request->getUser();
 
 		$apiKeyEnabled = (bool) $this->getData('apiKeyEnabled');
@@ -93,5 +93,7 @@ class APIProfileForm extends BaseProfileForm {
 			$apiKey = sha1(time());
 			$user->updateSetting('apiKey', $apiKey);
 		}
+
+		parent::execute(...$functionArgs);
 	}
 }

@@ -3,9 +3,9 @@
 /**
  * @file tests/classes/config/ConfigTest.php
  *
- * Copyright (c) 2014-2018 Simon Fraser University
- * Copyright (c) 2000-2018 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class ConfigTest
  * @ingroup tests_classes_config
@@ -36,12 +36,12 @@ class ConfigTest extends PKPTestCase {
 
 	/**
 	 * @depends testSetConfigFileName
-	 * @expectedException PHPUnit_Framework_Error
 	 * @covers Config::reloadData
 	 */
 	public function testReloadDataWithNonExistentConfigFile() {
 		$this->expectOutputRegex('/Cannot read configuration file some_config/');
 		Config::setConfigFileName('some_config');
+		$this->expectError();
 		Config::reloadData();
 	}
 
@@ -97,4 +97,4 @@ class ConfigTest extends PKPTestCase {
 	}
 }
 
-?>
+

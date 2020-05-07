@@ -1,9 +1,9 @@
 {**
  * templates/controllers/grid/user/reviewer/form/editReviewForm.tpl
  *
- * Copyright (c) 2014-2018 Simon Fraser University
- * Copyright (c) 2003-2018 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * Limit the review files available to a reviewer who has already been
  * assigned to a submission.
@@ -24,8 +24,8 @@
 	<input type="hidden" name="reviewRoundId" value="{$reviewRoundId|escape}" />
 
 	{fbvFormSection title="editor.review.importantDates"}
-		{fbvElement type="text" id="responseDueDate" name="responseDueDate" label="submission.task.responseDueDate" value=$responseDueDate|date_format:$dateFormatShort inline=true size=$fbvStyles.size.MEDIUM class="datepicker"}
-		{fbvElement type="text" id="reviewDueDate" name="reviewDueDate" label="editor.review.reviewDueDate" value=$reviewDueDate|date_format:$dateFormatShort inline=true size=$fbvStyles.size.MEDIUM class="datepicker"}
+		{fbvElement type="text" id="responseDueDate" name="responseDueDate" label="submission.task.responseDueDate" value=$responseDueDate inline=true size=$fbvStyles.size.MEDIUM class="datepicker"}
+		{fbvElement type="text" id="reviewDueDate" name="reviewDueDate" label="editor.review.reviewDueDate" value=$reviewDueDate inline=true size=$fbvStyles.size.MEDIUM class="datepicker"}
 	{/fbvFormSection}
 
 	{fbvFormSection list=true title="editor.submissionReview.reviewType"}

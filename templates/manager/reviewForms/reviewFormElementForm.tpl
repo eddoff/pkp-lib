@@ -1,9 +1,9 @@
 {**
  * templates/manager/reviewForms/reviewFormElementForm.tpl
  *
- * Copyright (c) 2014-2018 Simon Fraser University
- * Copyright (c) 2003-2018 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * Form to create/modify a review form element.
  *
@@ -42,6 +42,11 @@ function togglePossibleResponses(newValue, multipleResponsesElementTypesString) 
 		<!-- question -->
 		{fbvFormSection title="manager.reviewFormElements.question" required=true for="question"}
 			{fbvElement type="textarea" id="question" value=$question multilingual=true rich=true}
+		{/fbvFormSection}
+
+		<!-- description -->
+		{fbvFormSection title="manager.reviewFormElements.description" for="description"}
+			{fbvElement type="textarea" id="description" value=$description multilingual=true rich=true}
 		{/fbvFormSection}
 
 		<!-- required checkbox -->

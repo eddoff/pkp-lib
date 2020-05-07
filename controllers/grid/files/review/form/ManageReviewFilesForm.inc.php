@@ -3,9 +3,9 @@
 /**
  * @file controllers/grid/files/review/form/ManageReviewFilesForm.inc.php
  *
- * Copyright (c) 2014-2018 Simon Fraser University
- * Copyright (c) 2003-2018 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class ManageReviewFilesForm
  * @ingroup controllers_grid_files_review_form
@@ -57,7 +57,7 @@ class ManageReviewFilesForm extends ManageSubmissionFilesForm {
 	 * @return ReviewRound
 	 */
 	function getReviewRound() {
-		$reviewRoundDao = DAORegistry::getDAO('ReviewRoundDAO');
+		$reviewRoundDao = DAORegistry::getDAO('ReviewRoundDAO'); /* @var $reviewRoundDao ReviewRoundDAO */
 		return $reviewRoundDao->getById($this->getReviewRoundId());
 	}
 
@@ -80,13 +80,12 @@ class ManageReviewFilesForm extends ManageSubmissionFilesForm {
 
 	/**
 	 * Save review round files
-	 * @param $args array
-	 * @param $request PKPRequest
 	 * @stageSubmissionFiles array The files that belongs to a file stage
 	 * that is currently being used by a grid inside this form.
+	 * @param $fileStage int SUBMISSION_FILE_...
 	 */
-	function execute($args, $request, $stageSubmissionFiles) {
-		parent::execute($args, $request, $stageSubmissionFiles, SUBMISSION_FILE_REVIEW_FILE);
+	function execute($stageSubmissionFiles, $fileStage = null) {
+		parent::execute($stageSubmissionFiles, SUBMISSION_FILE_REVIEW_FILE);
 	}
 
 	/**
@@ -95,9 +94,9 @@ class ManageReviewFilesForm extends ManageSubmissionFilesForm {
 	protected function importFile($context, $submissionFile, $fileStage) {
 		$newSubmissionFile = parent::importFile($context, $submissionFile, $fileStage);
 
-		$submissionFileDao = DAORegistry::getDAO('SubmissionFileDAO');
+		$submissionFileDao = DAORegistry::getDAO('SubmissionFileDAO'); /* @var $submissionFileDao SubmissionFileDAO */
 		$submissionFileDao->assignRevisionToReviewRound($newSubmissionFile->getFileId(), $newSubmissionFile->getRevision(), $this->getReviewRound());
 	}
 }
 
-?>
+

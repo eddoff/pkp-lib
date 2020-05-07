@@ -3,9 +3,9 @@
 /**
  * @file pages/notification/NotificationHandler.inc.php
  *
- * Copyright (c) 2014-2018 Simon Fraser University
- * Copyright (c) 2000-2018 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class NotificationHandler
  * @ingroup pages_help
@@ -29,7 +29,7 @@ class NotificationHandler extends Handler {
 		$user = $request->getUser();
 		$userId = $user?$user->getId():null;
 		$context = $request->getContext();
-		$notificationDao = DAORegistry::getDAO('NotificationDAO');
+		$notificationDao = DAORegistry::getDAO('NotificationDAO'); /* @var $notificationDao NotificationDAO */
 		$notifications = array();
 
 		// Get the notification options from request.
@@ -76,7 +76,7 @@ class NotificationHandler extends Handler {
 	 * @return Array
 	 */
 	function _getNotificationsByOptions($notificationOptions, $contextId, $userId = null) {
-		$notificationDao = DAORegistry::getDAO('NotificationDAO');
+		$notificationDao = DAORegistry::getDAO('NotificationDAO'); /* @var $notificationDao NotificationDAO */
 		$notificationsArray = array();
 		$notificationMgr = new NotificationManager();
 
@@ -130,4 +130,4 @@ class NotificationHandler extends Handler {
 	}
 }
 
-?>
+

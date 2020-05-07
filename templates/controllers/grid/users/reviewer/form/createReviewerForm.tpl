@@ -1,9 +1,9 @@
 {**
  * templates/controllers/grid/users/reviewer/createReviewerForm.tpl
  *
- * Copyright (c) 2014-2018 Simon Fraser University
- * Copyright (c) 2003-2018 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * Create a reviewer and assign to a submission form.
  *
@@ -23,6 +23,7 @@
 </script>
 
 <form class="pkp_form" id="createReviewerForm" method="post" action="{url op="createReviewer"}" >
+	<input type="hidden" name="sitePrimaryLocale" value="{$sitePrimaryLocale|escape}">
 	{csrf}
 	{include file="controllers/notification/inPlaceNotification.tpl" notificationId="createReviewerFormNotification"}
 

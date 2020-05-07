@@ -3,9 +3,9 @@
 /**
  * @file controllers/modals/editorDecision/form/PromoteForm.inc.php
  *
- * Copyright (c) 2014-2018 Simon Fraser University
- * Copyright (c) 2003-2018 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class PromoteForm
  * @ingroup controllers_modals_editorDecision_form
@@ -51,8 +51,8 @@ class PromoteForm extends EditorDecisionWithEmailForm {
 	 * @copydoc EditorDecisionWithEmailForm::initData()
 	 */
 	function initData($actionLabels = array()) {
-		$request = Application::getRequest();
-		$actionLabels = EditorDecisionActionsManager::getActionLabels($request->getContext(), $this->_getDecisions());
+		$request = Application::get()->getRequest();
+		$actionLabels = (new EditorDecisionActionsManager())->getActionLabels($request->getContext(), $this->getStageId(), $this->_getDecisions());
 
 		$submission = $this->getSubmission();
 		$this->setData('stageId', $this->getStageId());
@@ -74,12 +74,16 @@ class PromoteForm extends EditorDecisionWithEmailForm {
 	/**
 	 * @copydoc Form::execute()
 	 */
-	function execute($args, $request) {
+	function execute(...$functionParams) {
+		parent::execute(...$functionParams);
+
+		$request = Application::get()->getRequest();
+
 		// Retrieve the submission.
 		$submission = $this->getSubmission();
 
 		// Get this form decision actions labels.
-		$actionLabels = EditorDecisionActionsManager::getActionLabels($request->getContext(), $this->_getDecisions());
+		$actionLabels = (new EditorDecisionActionsManager())->getActionLabels($request->getContext(), $this->getStageId(), $this->_getDecisions());
 
 		// Record the decision.
 		$reviewRound = $this->getReviewRound();
@@ -166,7 +170,7 @@ class PromoteForm extends EditorDecisionWithEmailForm {
 
 		if ($this->getData('requestPayment')) {
 			$context = $request->getContext();
-			$stageDecisions = EditorDecisionActionsManager::getStageDecisions($context, $this->getStageId());
+			$stageDecisions = (new EditorDecisionActionsManager())->getStageDecisions($context, $this->getStageId());
 			$decisionData = $stageDecisions[$decision];
 			if (isset($decisionData['paymentType'])) {
 				$paymentType = $decisionData['paymentType'];
@@ -178,7 +182,7 @@ class PromoteForm extends EditorDecisionWithEmailForm {
 
 				// Notify any authors that this needs payment.
 				$notificationMgr = new NotificationManager();
-				$stageAssignmentDao = DAORegistry::getDAO('StageAssignmentDAO');
+				$stageAssignmentDao = DAORegistry::getDAO('StageAssignmentDAO'); /* @var $stageAssignmentDao StageAssignmentDAO */
 				$stageAssignments = $stageAssignmentDao->getBySubmissionAndRoleId($submission->getId(), ROLE_ID_AUTHOR, null);
 				$userIds = array();
 				while ($stageAssignment = $stageAssignments->next()) {
@@ -208,4 +212,4 @@ class PromoteForm extends EditorDecisionWithEmailForm {
 	}
 }
 
-?>
+

@@ -3,9 +3,9 @@
 /**
  * @file controllers/modals/editorDecision/form/EditorDecisionWithEmailForm.inc.php
  *
- * Copyright (c) 2014-2018 Simon Fraser University
- * Copyright (c) 2003-2018 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class EditorDecisionWithEmailForm
  * @ingroup controllers_modals_editorDecision_form
@@ -19,18 +19,6 @@ class EditorDecisionWithEmailForm extends EditorDecisionForm {
 
 	/** @var String */
 	var $_saveFormOperation;
-
-	/**
-	 * Constructor.
-	 * @param $submission Submission
-	 * @param $decision integer
-	 * @param $stageId integer
-	 * @param $template string The template to display
-	 * @param $reviewRound ReviewRound
-	 */
-	function __construct($submission, $decision, $stageId, $template, $reviewRound = null) {
-		parent::__construct($submission, $decision, $stageId, $template, $reviewRound);
-	}
 
 	//
 	// Getters and Setters
@@ -59,7 +47,7 @@ class EditorDecisionWithEmailForm extends EditorDecisionForm {
 	 * @param $actionLabels array
 	 */
 	function initData($actionLabels = array()) {
-		$request = Application::getRequest();
+		$request = Application::get()->getRequest();
 		$context = $request->getContext();
 		$router = $request->getRouter();
 		$dispatcher = $router->getDispatcher();
@@ -83,7 +71,6 @@ class EditorDecisionWithEmailForm extends EditorDecisionForm {
 		$submissionUrl = $dispatcher->url($request, ROUTE_PAGE, null, 'authorDashboard', 'submission', $submission->getId());
 		$email->assignParams(array(
 			'authorName' => $submission->getAuthorString(),
-			'editorialContactSignature' => $user->getContactSignature(),
 			'submissionUrl' => $submissionUrl,
 		));
 		$email->replaceParams();
@@ -117,9 +104,9 @@ class EditorDecisionWithEmailForm extends EditorDecisionForm {
 	}
 
 	/**
-	 * @copydoc Form::fetch()
+	 * @copydoc EditorDecisionForm::fetch()
 	 */
-	function fetch($request) {
+	function fetch($request, $template = null, $display = false) {
 
 		$templateMgr = TemplateManager::getManager($request);
 
@@ -129,7 +116,7 @@ class EditorDecisionWithEmailForm extends EditorDecisionForm {
 			$reviewsAvailable = false;
 			$submission = $this->getSubmission();
 			$reviewRound = $this->getReviewRound();
-			$reviewAssignmentDao = DAORegistry::getDAO('ReviewAssignmentDAO');
+			$reviewAssignmentDao = DAORegistry::getDAO('ReviewAssignmentDAO'); /* @var $reviewAssignmentDao ReviewAssignmentDAO */
 			$reviewAssignments = $reviewAssignmentDao->getBySubmissionId($submission->getId(), $reviewRound->getId());
 			foreach ($reviewAssignments as $reviewAssignment) {
 				if ($reviewAssignment->getDateCompleted() != null) {
@@ -170,7 +157,7 @@ class EditorDecisionWithEmailForm extends EditorDecisionForm {
 		$templateMgr->assign('allowedVariables', $this->_getAllowedVariables($request));
 		$templateMgr->assign('allowedVariablesType', $this->_getAllowedVariablesType());
 
-		return parent::fetch($request);
+		return parent::fetch($request, $template, $display);
 	}
 
 
@@ -291,10 +278,7 @@ class EditorDecisionWithEmailForm extends EditorDecisionForm {
 				$libraryFileManager = new LibraryFileManager($libraryFile->getContextId());
 
 				// Add the attachment to the email.
-				$email->addAttachment(
-					$libraryFileManager->getBasePath() .  $libraryFile->getOriginalFileName(),
-					$libraryFile->getOriginalFileName()
-				);
+				$email->addAttachment($libraryFile->getFilePath(), $libraryFile->getOriginalFileName());
 			}
 		}
 
@@ -310,7 +294,11 @@ class EditorDecisionWithEmailForm extends EditorDecisionForm {
 				'authorName' => $submission->getAuthorString(),
 				'editorialContactSignature' => $user->getContactSignature(),
 			));
-			$email->send($request);
+			if (!$email->send($request)) {
+				import('classes.notification.NotificationManager');
+				$notificationMgr = new NotificationManager();
+				$notificationMgr->createTrivialNotification($request->getUser()->getId(), NOTIFICATION_TYPE_ERROR, array('contents' => __('email.compose.error')));
+			}
 		}
 	}
 
@@ -348,4 +336,4 @@ class EditorDecisionWithEmailForm extends EditorDecisionForm {
 	}
 }
 
-?>
+

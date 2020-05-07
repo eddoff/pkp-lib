@@ -3,9 +3,9 @@
 /**
  * @file classes/user/form/PublicProfileForm.inc.php
  *
- * Copyright (c) 2014-2018 Simon Fraser University
- * Copyright (c) 2003-2018 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class PublicProfileForm
  * @ingroup user_form
@@ -24,7 +24,7 @@ class PublicProfileForm extends BaseProfileForm {
 	/**
 	 * Constructor.
 	 * @param $template string
-	 * @param $user PKPUser
+	 * @param $user User
 	 */
 	function __construct($user) {
 		parent::__construct('user/publicProfileForm.tpl', $user);
@@ -113,11 +113,9 @@ class PublicProfileForm extends BaseProfileForm {
 	}
 
 	/**
-	 * Fetch the form.
-	 * @param $request PKPRequest
-	 * @return string JSON-encoded form contents.
+	 * @copydoc BaseProfileForm::fetch
 	 */
-	function fetch($request) {
+	function fetch($request, $template = null, $display = false) {
 		$templateMgr = TemplateManager::getManager($request);
 
 		$publicFileManager = new PublicFileManager();
@@ -128,22 +126,22 @@ class PublicProfileForm extends BaseProfileForm {
 			'publicSiteFilesPath' => $publicFileManager->getSiteFilesPath(),
 		));
 
-		return parent::fetch($request);
+		return parent::fetch($request, $template, $display);
 	}
 
 	/**
-	 * Save public profile settings.
-	 * @param $request PKPRequest
+	 * @copydoc Form::execute()
 	 */
-	function execute($request) {
+	function execute(...$functionArgs) {
+		$request = Application::get()->getRequest();
 		$user = $request->getUser();
 
 		$user->setOrcid($this->getData('orcid'));
 		$user->setUrl($this->getData('userUrl'));
 		$user->setBiography($this->getData('biography'), null); // Localized
 
-		parent::execute($request, $user);
+		parent::execute(...$functionArgs);
 	}
 }
 
-?>
+

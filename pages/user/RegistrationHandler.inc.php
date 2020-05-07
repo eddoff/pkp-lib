@@ -3,9 +3,9 @@
 /**
  * @file pages/user/RegistrationHandler.inc.php
  *
- * Copyright (c) 2014-2018 Simon Fraser University
- * Copyright (c) 2003-2018 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class RegistrationHandler
  * @ingroup pages_user
@@ -21,9 +21,9 @@ class RegistrationHandler extends UserHandler {
 	/**
 	 * @see PKPHandler::initialize()
 	 */
-	function initialize($request, &$args) {
+	function initialize($request) {
 		AppLocale::requireComponents(LOCALE_COMPONENT_APP_COMMON);
-		parent::initialize($request, $args);
+		parent::initialize($request);
 	}
 
 	/**
@@ -43,10 +43,10 @@ class RegistrationHandler extends UserHandler {
 			$this->setupTemplate($request);
 			$templateMgr = TemplateManager::getManager($request);
 			$templateMgr->assign('pageTitle', 'user.login.registrationComplete');
-			return $templateMgr->fetch('frontend/pages/userRegisterComplete.tpl');
+			return $templateMgr->display('frontend/pages/userRegisterComplete.tpl');
 		}
 
-		$this->validate($request);
+		$this->validate(null, $request);
 		$this->setupTemplate($request);
 
 		import('lib.pkp.classes.user.form.RegistrationForm');
@@ -64,7 +64,7 @@ class RegistrationHandler extends UserHandler {
 			return $regForm->display($request);
 		}
 
-		$regForm->execute($request);
+		$regForm->execute();
 
 		// Inform the user of the email validation process. This must be run
 		// before the disabled account check to ensure new users don't see the
@@ -128,7 +128,7 @@ class RegistrationHandler extends UserHandler {
 		$username = array_shift($args);
 		$accessKeyCode = array_shift($args);
 		AppLocale::requireComponents(LOCALE_COMPONENT_PKP_USER);
-		$userDao = DAORegistry::getDAO('UserDAO');
+		$userDao = DAORegistry::getDAO('UserDAO'); /* @var $userDao UserDAO */
 		$user = $userDao->getByUsername($username);
 		if (!$user) $request->redirect(null, 'login');
 
@@ -157,11 +157,9 @@ class RegistrationHandler extends UserHandler {
 	}
 
 	/**
-	 * Validation check.
-	 * Checks if context allows user registration.
-	 * @param $request PKPRequest
+	 * @copydoc PKPHandler::validate
 	 */
-	function validate($request) {
+	function validate($requiredContexts = null, $request = null) {
 		$context = $request->getContext();
 		$disableUserReg = false;
 		if(!$context) {
@@ -169,14 +167,14 @@ class RegistrationHandler extends UserHandler {
 			$contexts = $contextDao->getAll(true)->toArray();
 			$contextsForRegistration = array();
 			foreach($contexts as $context) {
-				if (!$context->getSetting('disableUserReg')) {
+				if (!$context->getData('disableUserReg')) {
 					$contextsForRegistration[] = $context;
 				}
 			}
 			if (empty($contextsForRegistration)) {
 				$disableUserReg = true;
 			}
-		} elseif($context->getSetting('disableUserReg')) {
+		} elseif($context->getData('disableUserReg')) {
 			$disableUserReg = true;
 		}
 
@@ -195,4 +193,4 @@ class RegistrationHandler extends UserHandler {
 	}
 }
 
-?>
+

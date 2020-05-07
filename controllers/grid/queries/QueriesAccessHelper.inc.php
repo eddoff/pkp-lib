@@ -3,9 +3,9 @@
 /**
  * @file controllers/grid/queries/QueriesAccessHelper.inc.php
  *
- * Copyright (c) 2016-2018 Simon Fraser University
- * Copyright (c) 2000-2018 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2016-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class QueriesAccessHelper
  * @ingroup controllers_grid_query
@@ -59,7 +59,7 @@ class QueriesAccessHelper {
 		if ($this->hasStageRole($query->getStageId(), array(ROLE_ID_MANAGER, ROLE_ID_SUB_EDITOR))) return true;
 
 		// Assigned assistants are allowed
-		if ($this->hasStageRole($query->getStageId(), array(ROLE_ID_ASSISTANT)) && $this->isAssigned($this->_user->getId(), $queryId)) return true;
+		if ($this->hasStageRole($query->getStageId(), array(ROLE_ID_ASSISTANT)) && $this->isAssigned($this->_user->getId(), $query->getId())) return true;
 
 		// Otherwise, not allowed.
 		return false;
@@ -89,7 +89,7 @@ class QueriesAccessHelper {
 	 * @return boolean True iff the user is allowed to edit the query.
 	 */
 	function getCanEdit($queryId) {
-		$queryDao = DAORegistry::getDAO('QueryDAO');
+		$queryDao = DAORegistry::getDAO('QueryDAO'); /* @var $queryDao QueryDAO */
 		$query = $queryDao->getById($queryId);
 		if (!$query) return false;
 
@@ -112,7 +112,7 @@ class QueriesAccessHelper {
 	 */
 	function getCanDelete($queryId) {
 		// Users can always delete their own placeholder queries.
-		$queryDao = DAORegistry::getDAO('QueryDAO');
+		$queryDao = DAORegistry::getDAO('QueryDAO'); /* @var $queryDao QueryDAO */
 		$query = $queryDao->getById($queryId);
 		if ($query) {
 			$headNote = $query->getHeadNote();
@@ -143,7 +143,7 @@ class QueriesAccessHelper {
 	 * @return boolean
 	 */
 	protected function isAssigned($userId, $queryId) {
-		$queryDao = DAORegistry::getDAO('QueryDAO');
+		$queryDao = DAORegistry::getDAO('QueryDAO'); /* @var $queryDao QueryDAO */
 		return (boolean) $queryDao->getParticipantIds($queryId, $userId);
 	}
 
@@ -160,4 +160,4 @@ class QueriesAccessHelper {
 	}
 }
 
-?>
+

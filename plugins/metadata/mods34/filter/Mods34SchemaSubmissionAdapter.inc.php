@@ -3,9 +3,9 @@
 /**
  * @file plugins/metadata/mods34/filter/Mods34SchemaSubmissionAdapter.inc.php
  *
- * Copyright (c) 2014-2018 Simon Fraser University
- * Copyright (c) 2000-2018 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class Mods34SchemaSubmissionAdapter
  * @ingroup plugins_metadata_mods34_filter
@@ -294,9 +294,9 @@ class Mods34SchemaSubmissionAdapter extends MetadataDataObjectAdapter {
 		$this->addLocalizedStatements($mods34Description, 'subject/topic', $localizedDisciplines);
 
 		// Subject
-		$submissionSubjectDao = DAORegistry::getDAO('SubmissionSubjectDAO');
+		$submissionSubjectDao = DAORegistry::getDAO('SubmissionSubjectDAO'); /* @var $submissionSubjectDao SubmissionSubjectDAO */
 		$supportedLocales = array_keys(AppLocale::getSupportedFormLocales());
-		$this->addLocalizedStatements($mods34Description, 'subject/topic', (array) $submissionSubjectDao->getSubjects($submission->getId(), $supportedLocales));
+		$this->addLocalizedStatements($mods34Description, 'subject/topic', (array) $submissionSubjectDao->getSubjects($submission->getCurrentPublication()->getId(), $supportedLocales));
 
 		// FIXME: Coverage not included
 
@@ -346,4 +346,4 @@ class Mods34SchemaSubmissionAdapter extends MetadataDataObjectAdapter {
 		return ($unmappedFields[$translated]);
 	}
 }
-?>
+

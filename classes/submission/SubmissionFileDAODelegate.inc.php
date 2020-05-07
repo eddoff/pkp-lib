@@ -3,9 +3,9 @@
 /**
  * @file classes/submission/SubmissionFileDAODelegate.inc.php
  *
- * Copyright (c) 2014-2018 Simon Fraser University
- * Copyright (c) 2003-2018 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class SubmissionFileDAODelegate
  * @ingroup submission
@@ -389,7 +389,7 @@ class SubmissionFileDAODelegate extends DAO {
 	function deleteAllPubIds($contextId, $pubIdType) {
 		$settingName = 'pub-id::'.$pubIdType;
 
-		$submissionDao = Application::getSubmissionDAO();
+		$submissionDao = DAORegistry::getDAO('SubmissionDAO'); /* @var $submissionDao SubmissionDAO */
 		$submissions = $submissionDao->getByContextId($contextId);
 		$submissionFileDao = DAORegistry::getDAO('SubmissionFileDAO'); /* @var $submissionFileDao SubmissionFileDAO */
 		while ($submission = $submissions->next()) {
@@ -444,4 +444,4 @@ class SubmissionFileDAODelegate extends DAO {
 	}
 }
 
-?>
+

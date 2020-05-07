@@ -3,9 +3,9 @@
 /**
  * @file classes/plugins/PluginHelper.inc.php
  *
- * Copyright (c) 2014-2018 Simon Fraser University
- * Copyright (c) 2003-2018 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class PluginHelper
  * @ingroup classes_plugins
@@ -38,6 +38,7 @@ class PluginHelper {
 	 * Extract and validate a plugin (prior to installation)
 	 * @param $filePath string Full path to plugin archive
 	 * @param $originalFileName string Original filename of plugin archive
+	 * @param &$errorMsg string Modified string of error message, if any
 	 * @return string|null Extracted plugin path on success; null on error
 	 */
 	function extractPlugin($filePath, $originalFileName, &$errorMsg) {
@@ -61,7 +62,12 @@ class PluginHelper {
 		// Test whether the tar binary is available for the export to work
 		$tarBinary = Config::getVar('cli', 'tar');
 		if (!empty($tarBinary) && file_exists($tarBinary)) {
-			exec($tarBinary.' -xzf ' . escapeshellarg($filePath) . ' -C ' . escapeshellarg($pluginExtractDir));
+			$output = '';
+			$returnCode = 0;
+			exec($tarBinary.' -xzf ' . escapeshellarg($filePath) . ' -C ' . escapeshellarg($pluginExtractDir), $output, $returnCode);
+			if ($returnCode) {
+				$errorMsg = __('form.dropzone.dictInvalidFileType');
+			}
 		} else {
 			$errorMsg = __('manager.plugins.tarCommandNotFound');
 		}
@@ -105,11 +111,11 @@ class PluginHelper {
 
 		$versionDao = DAORegistry::getDAO('VersionDAO'); /* @var $versionDao VersionDAO */
 		$installedPlugin = $versionDao->getCurrentVersion($pluginVersion->getProductType(), $pluginVersion->getProduct(), true);
+		$pluginDest = Core::getBaseDir() . '/' . strtr($pluginVersion->getProductType(), '.', '/') . '/' . $pluginVersion->getProduct();
 
 		$fileManager = new FileManager();
-		if (!$installedPlugin) {
+		if (!$installedPlugin || !file_exists($pluginDest)) {
 			$pluginLibDest = Core::getBaseDir() . '/' . PKP_LIB_PATH . '/' . strtr($pluginVersion->getProductType(), '.', '/') . '/' . $pluginVersion->getProduct();
-			$pluginDest = Core::getBaseDir() . '/' . strtr($pluginVersion->getProductType(), '.', '/') . '/' . $pluginVersion->getProduct();
 
 			// Copy the plug-in from the temporary folder to the
 			// target folder.
@@ -121,7 +127,7 @@ class PluginHelper {
 			$installFile = $pluginDest . '/' . PLUGIN_INSTALL_FILE;
 			if(!is_file($installFile)) $installFile = Core::getBaseDir() . '/' . PKP_LIB_PATH . '/xml/defaultPluginInstall.xml';
 			assert(is_file($installFile));
-			$siteDao = DAORegistry::getDAO('SiteDAO');
+			$siteDao = DAORegistry::getDAO('SiteDAO'); /* @var $siteDao SiteDAO */
 			$site = $siteDao->getSite();
 			$params = $this->_getConnectionParams();
 			$params['locale'] = $site->getPrimaryLocale();
@@ -157,7 +163,7 @@ class PluginHelper {
 	 * @return boolean
 	 */
 	function _checkIfNewer($productType, $productName, $newVersion) {
-		$versionDao = DAORegistry::getDAO('VersionDAO');
+		$versionDao = DAORegistry::getDAO('VersionDAO'); /* @var $versionDao VersionDAO */
 		$installedPlugin = $versionDao->getCurrentVersion($productType, $productName, true);
 		if ($installedPlugin && $installedPlugin->compare($newVersion) > 0) return true;
 		return false;
@@ -171,7 +177,6 @@ class PluginHelper {
 		return array(
 			'clientCharset' => Config::getVar('i18n', 'client_charset'),
 			'connectionCharset' => Config::getVar('i18n', 'connection_charset'),
-			'databaseCharset' => Config::getVar('i18n', 'database_charset'),
 			'databaseDriver' => Config::getVar('database', 'driver'),
 			'databaseHost' => Config::getVar('database', 'host'),
 			'databaseUsername' => Config::getVar('database', 'username'),
@@ -185,8 +190,6 @@ class PluginHelper {
 	 * @param $category string
 	 * @param $plugin string
 	 * @param $path string path to plugin Directory
-	 * @param $category string
-	 * @param $plugin string
 	 * @return Version|null The upgraded version, on success; null on fail
 	 */
 	function upgradePlugin($category, $plugin, $path, &$errorMsg) {
@@ -209,7 +212,7 @@ class PluginHelper {
 			return null;
 		}
 
-		$versionDao = DAORegistry::getDAO('VersionDAO');
+		$versionDao = DAORegistry::getDAO('VersionDAO'); /* @var $versionDao VersionDAO */
 		$installedPlugin = $versionDao->getCurrentVersion($pluginVersion->getProductType(), $pluginVersion->getProduct(), true);
 		if(!$installedPlugin) {
 			$errorMsg = __('manager.plugins.pleaseInstall');
@@ -244,7 +247,7 @@ class PluginHelper {
 
 			$upgradeFile = $pluginDest . '/' . PLUGIN_UPGRADE_FILE;
 			if($fileManager->fileExists($upgradeFile)) {
-				$siteDao = DAORegistry::getDAO('SiteDAO');
+				$siteDao = DAORegistry::getDAO('SiteDAO'); /* @var $siteDao SiteDAO */
 				$site = $siteDao->getSite();
 				$params = $this->_getConnectionParams();
 				$params['locale'] = $site->getPrimaryLocale();
@@ -265,7 +268,7 @@ class PluginHelper {
 	}
 
 	/**
-	 * Cut and paste plugin from temporary files to it's actual place.
+	 * Cut and paste plugin from temporary files to its actual place.
 	 * @param $path string Path of temporary files
 	 * @param $pluginDest string Path of application-specific part (mandatory)
 	 * @param $pluginLibDest string path of library part (if any)
@@ -308,4 +311,3 @@ class PluginHelper {
 	}
 }
 
-?>

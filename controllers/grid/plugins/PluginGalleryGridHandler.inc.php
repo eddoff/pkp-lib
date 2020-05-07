@@ -3,9 +3,9 @@
 /**
  * @file controllers/grid/settings/pluginGallery/PluginGalleryGridHandler.inc.php
  *
- * Copyright (c) 2014-2018 Simon Fraser University
- * Copyright (c) 2000-2018 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class PluginGalleryGridHandler
  * @ingroup controllers_grid_settings_pluginGallery
@@ -120,9 +120,9 @@ class PluginGalleryGridHandler extends GridHandler {
 	 */
 	protected function loadData($request, $filter) {
 		// Get all plugins.
-		$pluginGalleryDao = DAORegistry::getDAO('PluginGalleryDAO');
+		$pluginGalleryDao = DAORegistry::getDAO('PluginGalleryDAO'); /* @var $pluginGalleryDao PluginGalleryDAO */
 		return $pluginGalleryDao->getNewestCompatible(
-			Application::getApplication(),
+			Application::get(),
 			$request->getUserVar('category'),
 			$request->getUserVar('pluginText')
 		);
@@ -250,7 +250,24 @@ class PluginGalleryGridHandler extends GridHandler {
 		// Download the file and ensure the MD5 sum
 		$fileManager = new FileManager();
 		$destPath = tempnam(sys_get_temp_dir(), 'plugin');
-		$fileManager->copyFile($plugin->getReleasePackage(), $destPath);
+
+		$wrapper = FileWrapper::wrapper($plugin->getReleasePackage());
+		while (true) {
+			$newWrapper = $wrapper->open();
+			if (is_a($newWrapper, 'FileWrapper')) {
+				// Follow a redirect
+				$wrapper = $newWrapper;
+			} elseif (!$newWrapper) {
+				fatalError('Unable to open plugin URL!');
+			} else {
+				// OK, we've found the end result
+				break;
+			}
+		}
+
+		if (!$wrapper->save($destPath)) fatalError('Unable to save plugin to local file!');
+		$wrapper->close();
+
 		if (md5_file($destPath) !== $plugin->getReleaseMD5()) fatalError('Incorrect MD5 checksum!');
 
 		// Extract the plugin
@@ -286,8 +303,8 @@ class PluginGalleryGridHandler extends GridHandler {
 	 */
 	function _getSpecifiedPlugin($request) {
 		// Get all plugins.
-		$pluginGalleryDao = DAORegistry::getDAO('PluginGalleryDAO');
-		$plugins = $pluginGalleryDao->getNewestCompatible(Application::getApplication());
+		$pluginGalleryDao = DAORegistry::getDAO('PluginGalleryDAO'); /* @var $pluginGalleryDao PluginGalleryDAO */
+		$plugins = $pluginGalleryDao->getNewestCompatible(Application::get());
 
 		// Get specified plugin. Indexes into $plugins are 0-based
 		// but row IDs are 1-based; compensate.
@@ -297,4 +314,4 @@ class PluginGalleryGridHandler extends GridHandler {
 	}
 }
 
-?>
+

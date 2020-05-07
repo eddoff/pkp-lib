@@ -3,9 +3,9 @@
 /**
  * @file controllers/wizard/fileUpload/form/SubmissionFilesUploadConfirmationForm.inc.php
  *
- * Copyright (c) 2014-2018 Simon Fraser University
- * Copyright (c) 2003-2018 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class SubmissionFilesUploadConfirmationForm
  * @ingroup controllers_wizard_fileUpload_form
@@ -58,14 +58,15 @@ class SubmissionFilesUploadConfirmationForm extends PKPSubmissionFilesUploadBase
 	/**
 	 * Save the submission file upload confirmation form.
 	 * @see Form::execute()
-	 * @param $request Request
 	 * @return SubmissionFile if successful, otherwise null
 	 */
-	function execute($request) {
+	function execute(...$functionArgs) {
 		// Retrieve the file ids of the revised and the uploaded files.
 		$revisedFileId = $this->getRevisedFileId();
 		$uploadedFileId = (int)$this->getData('uploadedFileId');
 		if ($revisedFileId == $uploadedFileId) fatalError('The revised file id and the uploaded file id cannot be the same!');
+
+		parent::execute(...$functionArgs);
 
 		// Assign the new file as the latest revision of the old file.
 		$submissionFileDao = DAORegistry::getDAO('SubmissionFileDAO'); /* @var $submissionFileDao SubmissionFileDAO */
@@ -86,4 +87,4 @@ class SubmissionFilesUploadConfirmationForm extends PKPSubmissionFilesUploadBase
 	}
 }
 
-?>
+

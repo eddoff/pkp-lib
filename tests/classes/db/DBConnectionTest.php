@@ -3,9 +3,9 @@
 /**
  * @file tests/classes/db/DBConnectionTest.php
  *
- * Copyright (c) 2014-2018 Simon Fraser University
- * Copyright (c) 2000-2018 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class DBConnectionTest
  * @ingroup tests_classes_db
@@ -36,7 +36,19 @@ class DBConnectionTest extends DatabaseTestCase {
 				self::assertInstanceOf('ADODB_mysql', $dbConn);
 				break;
 			case 'postgres':
+				self::assertInstanceOf('ADODB_postgres7', $dbConn);
+				break;
+			case 'postgres64':
 				self::assertInstanceOf('ADODB_postgres64', $dbConn);
+				break;
+			case 'postgres7':
+				self::assertInstanceOf('ADODB_postgres7', $dbConn);
+				break;
+			case 'postgres8':
+				self::assertInstanceOf('ADODB_postgres8', $dbConn);
+				break;
+			case 'postgres9':
+				self::assertInstanceOf('ADODB_postgres9', $dbConn);
 				break;
 			default:
 				$this->fail('Unknown DB driver.');
@@ -78,4 +90,4 @@ class DBConnectionTest extends DatabaseTestCase {
 	}
 }
 
-?>
+

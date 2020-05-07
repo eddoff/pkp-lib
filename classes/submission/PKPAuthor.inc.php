@@ -3,9 +3,9 @@
 /**
  * @file classes/submission/PKPAuthor.inc.php
  *
- * Copyright (c) 2014-2018 Simon Fraser University
- * Copyright (c) 2000-2018 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class PKPAuthor
  * @ingroup submission
@@ -175,7 +175,7 @@ class PKPAuthor extends Identity {
 	 * @return float
 	 */
 	function getSequence() {
-		return $this->getData('sequence');
+		return $this->getData('seq');
 	}
 
 	/**
@@ -183,7 +183,7 @@ class PKPAuthor extends Identity {
 	 * @param $sequence float
 	 */
 	function setSequence($sequence) {
-		$this->setData('sequence', $sequence);
+		$this->setData('seq', $sequence);
 	}
 
 	/**
@@ -193,7 +193,7 @@ class PKPAuthor extends Identity {
 		//FIXME: should this be queried when fetching Author from DB? - see #5231.
 		static $userGroup; // Frequently we'll fetch the same one repeatedly
 		if (!$userGroup || $this->getUserGroupId() != $userGroup->getId()) {
-			$userGroupDao = DAORegistry::getDAO('UserGroupDAO');
+			$userGroupDao = DAORegistry::getDAO('UserGroupDAO'); /* @var $userGroupDao UserGroupDAO */
 			$userGroup = $userGroupDao->getById($this->getUserGroupId());
 		}
 		return $userGroup;
@@ -209,4 +209,4 @@ class PKPAuthor extends Identity {
 	}
 }
 
-?>
+

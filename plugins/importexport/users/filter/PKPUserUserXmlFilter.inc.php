@@ -3,9 +3,9 @@
 /**
  * @file plugins/importexport/users/filter/PKPUserUserXmlFilter.inc.php
  *
- * Copyright (c) 2014-2018 Simon Fraser University
- * Copyright (c) 2000-2018 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2000-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class PKPUserUserXmlFilter
  * @ingroup plugins_importexport_users
@@ -72,7 +72,7 @@ class PKPUserUserXmlFilter extends NativeExportFilter {
 	/**
 	 * Create and return a user node.
 	 * @param $doc DOMDocument
-	 * @param $user PKPUser
+	 * @param $user User
 	 * @return DOMElement
 	 */
 	function createPKPUserNode($doc, $user) {
@@ -126,8 +126,8 @@ class PKPUserUserXmlFilter extends NativeExportFilter {
 			$this->createOptionalNode($doc, $userNode, 'disabled_reason', $user->getDisabledReason());
 		}
 
-		$userGroupAssignmentDao = DAORegistry::getDAO('UserGroupAssignmentDAO');
-		$userGroupDao = DAORegistry::getDAO('UserGroupDAO');
+		$userGroupAssignmentDao = DAORegistry::getDAO('UserGroupAssignmentDAO'); /* @var $userGroupAssignmentDao UserGroupAssignmentDAO */
+		$userGroupDao = DAORegistry::getDAO('UserGroupDAO'); /* @var $userGroupDao UserGroupDAO */
 		$assignedGroups = $userGroupAssignmentDao->getByUserId($user->getId(), $context->getId());
 		while ($assignedGroup = $assignedGroups->next()) {
 			$userGroup = $userGroupDao->getById($assignedGroup->getUserGroupId());
@@ -150,9 +150,9 @@ class PKPUserUserXmlFilter extends NativeExportFilter {
 		$context = $deployment->getContext();
 		$userGroupsNode = $doc->createElementNS($deployment->getNamespace(), 'user_groups');
 
-		$userGroupDao = DAORegistry::getDAO('UserGroupDAO');
+		$userGroupDao = DAORegistry::getDAO('UserGroupDAO'); /* @var $userGroupDao UserGroupDAO */
 		$userGroups = $userGroupDao->getByContextId($context->getId());
-		$filterDao = DAORegistry::getDAO('FilterDAO');
+		$filterDao = DAORegistry::getDAO('FilterDAO'); /* @var $filterDao FilterDAO */
 		$userGroupExportFilters = $filterDao->getObjectsByGroup('usergroup=>user-xml');
 		assert(count($userGroupExportFilters)==1); // Assert only a single serialization filter
 		$exportFilter = array_shift($userGroupExportFilters);
@@ -167,4 +167,4 @@ class PKPUserUserXmlFilter extends NativeExportFilter {
 	}
 }
 
-?>
+

@@ -6,9 +6,9 @@
 /**
  * @file lib/pkp/classes/statistics/PKPMetricsDAO.inc.php
  *
- * Copyright (c) 2014-2018 Simon Fraser University
- * Copyright (c) 2003-2018 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class PKPMetricsDAO
  * @ingroup lib_pkp_classes_statistics
@@ -16,6 +16,7 @@
  * @brief Class with basic operations for retrieving and adding statistics data.
  */
 
+import('classes.statistics.StatisticsHelper'); //STATISTICS_DIMENSION_
 
 class PKPMetricsDAO extends DAO {
 
@@ -130,6 +131,10 @@ class PKPMetricsDAO extends DAO {
 				$currentClause =& $whereClause; // Reference required.
 			}
 
+			if (is_object($values)) {
+				$values = (array) $values;
+			}
+
 			if (is_array($values) && isset($values['from'])) {
 				// Range filter: The value is a hashed array with from/to entries.
 				if (!isset($values['to'])) return $nullVar;
@@ -145,13 +150,16 @@ class PKPMetricsDAO extends DAO {
 				if (is_scalar($values)) {
 					$currentClause .= "$column = ?";
 					$params[] = $values;
-				} else {
+				} elseif (count($values)) {
 					$placeholders = array_pad(array(), count($values), '?');
 					$placeholders = implode(', ', $placeholders);
 					$currentClause .= "$column IN ($placeholders)";
 					foreach ($values as $value) {
 						$params[] = $value;
 					}
+				} else {
+					// count($values) == 0: No matches should be returned.
+					$currentClause .= '1=0';
 				}
 			}
 
@@ -187,14 +195,8 @@ class PKPMetricsDAO extends DAO {
 
 		// Build the report.
 		$sql = "$selectClause FROM metrics $whereClause $groupByClause $havingClause $orderByClause";
-		if (is_a($range, 'DBResultRange')) {
-			if ($range->getCount() > STATISTICS_MAX_ROWS) {
-				$range->setCount(STATISTICS_MAX_ROWS);
-			}
-			$result = $this->retrieveRange($sql, $params, $range);
-		} else {
-			$result = $this->retrieveLimit($sql, $params, STATISTICS_MAX_ROWS);
-		}
+		if (is_a($range, 'DBResultRange')) $result = $this->retrieveRange($sql, $params, $range);
+		else $result = $this->retrieve($sql, $params);
 
 		// Return the report.
 		$returner = $result->GetAll();
@@ -374,14 +376,15 @@ class PKPMetricsDAO extends DAO {
 					if (!$isFile) $isRepresentation = true;
 
 					$contextId = $representation->getContextId();
-					$submissionId = $representation->getSubmissionId();
+					$publication = Services::get('publication')->get($representation->getData('publicationId'));
+					$submissionId = $publication->getData('submissionId');
 				} else {
 					throw new Exception('Cannot load record: invalid representation id.');
 				}
 				// Don't break but go on to retrieve the submission.
 			case ASSOC_TYPE_SUBMISSION:
 				if (!$isFile && !$isRepresentation) $submissionId = $assocId;
-				$submissionDao = Application::getSubmissionDAO(); /* @var $submissionDao SubmissionDAO */
+				$submissionDao = DAORegistry::getDAO('SubmissionDAO'); /* @var $submissionDao SubmissionDAO */
 				$submission = $submissionDao->getById($submissionId);
 				if ($submission) {
 					$contextId = $submission->getContextId();
@@ -428,4 +431,4 @@ class PKPMetricsDAO extends DAO {
 		return array(null, null);
 	}
 }
-?>
+

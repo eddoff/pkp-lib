@@ -3,9 +3,9 @@
 /**
  * @file controllers/api/file/linkAction/AddFileLinkAction.inc.php
  *
- * Copyright (c) 2014-2018 Simon Fraser University
- * Copyright (c) 2003-2018 John Willinsky
- * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+ * Copyright (c) 2014-2020 Simon Fraser University
+ * Copyright (c) 2003-2020 John Willinsky
+ * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @class AddFileLinkAction
  * @ingroup controllers_api_file_linkAction
@@ -89,6 +89,10 @@ class AddFileLinkAction extends BaseAddFileLinkAction {
 				'wizardTitle' => 'editor.submissionReview.uploadAttachment',
 				'buttonLabel' => 'editor.submissionReview.uploadAttachment'
 			),
+			SUBMISSION_FILE_ATTACHMENT => array(
+				'wizardTitle' => 'editor.submissionReview.uploadFile',
+				'buttonLabel' => 'submission.addFile'
+			),
 			SUBMISSION_FILE_REVIEW_REVISION => array(
 				'wizardTitle' => 'editor.submissionReview.uploadFile',
 				'buttonLabel' => 'submission.addFile'
@@ -128,4 +132,4 @@ class AddFileLinkAction extends BaseAddFileLinkAction {
 	}
 }
 
-?>
+
